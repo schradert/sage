@@ -1,0 +1,35 @@
+mutation {
+  addUser(input: [
+    {
+      username: "alice@dgraph.io",
+      name: "Alice",
+      tasks: [
+        {
+          title: "Avoid touching your face",
+          completed: false,
+        },
+        {
+          title: "Stay safe",
+          completed: false
+        },
+        {
+          title: "Avoid crowd",
+          completed: true,
+        },
+        {
+          title: "Wash your hands often",
+          completed: true
+        }
+      ]
+    }
+  ]) {
+    user {
+      username
+      name
+      tasks {
+        id
+        title
+      }
+    }
+  }
+}

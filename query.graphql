@@ -1,0 +1,10 @@
+query {
+  queryTask {
+    id
+    title
+    completed
+    user {
+        username
+    }
+  }
+}
