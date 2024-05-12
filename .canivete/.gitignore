@@ -1,0 +1,5 @@
+.terraform/
+config.tf.json
+config.yaml
+kubeconfig
+/opentofu/kubenix-local/
