@@ -57,7 +57,7 @@ After running this command, a prompt will instruct you to allow the project's en
 
 If there are issues with code not autoloading, `direnv reload` will force the environment to reevaluate.
 
-#### Tools
+#### Nix Tooling
 
 1. [`canivete`](https://github.com/schradert/canivete) as repository framework
 2. [`pre-commit`](https://pre-commit.com/) as git hook framework
