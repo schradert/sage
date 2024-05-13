@@ -5,7 +5,7 @@
       perSystem = {pkgs, ...}: {
         canivete = {
           devShell.name = "sage";
-          devShell.packages = with pkgs; [bun nodejs_22];
+          devShell.packages = with pkgs; [bun];
           pre-commit = {
             languages.javascript.enable = true;
             # Remap sveltekit assets to correct folder for static link checking
