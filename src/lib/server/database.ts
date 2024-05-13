@@ -1,31 +1,78 @@
-const db = new Map()
+import type { Edge, Node } from "@xyflow/svelte"
 
-export function getTodos(userid) {
-  if (!db.has(userid)) createUpdateTodo({ userid, description: "Learn about API routes" })
-  return Array.from(db.get(userid).values())
-}
+const position = { x: 0, y: 0 }
+const edgeType = "smoothstep"
 
-export function createUpdateTodo({ userid, description }) {
-  if (!db.has(userid)) db.set(userid, new Map())
-  if (description === "") throw new Error("todo must have a description")
+export const initialNodes: Node[] = [
+  {
+    id: "1",
+    type: "input",
+    data: { label: "input" },
+    position
+  },
+  {
+    id: "2",
+    data: { label: "node 2" },
+    position
+  },
+  {
+    id: "2a",
+    data: { label: "node 2a" },
+    position
+  },
+  {
+    id: "2b",
+    data: { label: "node 2b" },
+    position
+  },
+  {
+    id: "2c",
+    data: { label: "node 2c" },
+    position
+  },
+  {
+    id: "2d",
+    data: { label: "node 2d" },
+    position
+  },
+  {
+    id: "3",
+    data: { label: "node 3" },
+    position
+  },
+  {
+    id: "4",
+    data: { label: "node 4" },
+    position
+  },
+  {
+    id: "5",
+    data: { label: "node 5" },
+    position
+  },
+  {
+    id: "6",
+    type: "output",
+    data: { label: "output" },
+    position
+  },
+  {
+    id: "7",
+    type: "output",
+    data: { label: "output" },
+    position
+  }
+]
 
-  const todos = db.get(userid)
-
-  todos.set(userid, {
-    id: crypto.randomUUID(),
-    description,
-    done: false
-  })
-
-  return { userid }
-}
-
-export function toggleTodo({ userid, id, done }) {
-  const todos = db.get(userid)
-  todos.get(id).done = done
-}
-
-export function deleteTodo({ userid, id }) {
-  const todos = db.get(userid)
-  todos.delete(id)
-}
+export const initialEdges: Edge[] = [
+  { id: "e12", source: "1", target: "2", type: edgeType, animated: true },
+  { id: "e13", source: "1", target: "3", type: edgeType, animated: true },
+  { id: "e22a", source: "2", target: "2a", type: edgeType, animated: true },
+  { id: "e22b", source: "2", target: "2b", type: edgeType, animated: true },
+  { id: "e22c", source: "2", target: "2c", type: edgeType, animated: true },
+  { id: "e2c2d", source: "2c", target: "2d", type: edgeType, animated: true },
+  { id: "e45", source: "4", target: "5", type: edgeType, animated: true },
+  { id: "e56", source: "5", target: "6", type: edgeType, animated: true },
+  { id: "e57", source: "5", target: "7", type: edgeType, animated: true },
+  { id: "e34", source: "3", target: "4", type: edgeType, animated: true }
+]
