@@ -17,7 +17,7 @@
   import '@xyflow/svelte/dist/style.css';
 
   import ColorPickerNode from './ColorPickerNode.svelte';
-  import { initialNodes, initialEdges } from '$lib/nodes-and-edges';
+  import { initialNodes, initialEdges } from '$lib/server/database.ts';
 
   const nodeTypes = {'color-picker': ColorPickerNode};
   const nodes = writable<Node[]>([]);
