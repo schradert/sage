@@ -8,6 +8,8 @@
           devShell.packages = with pkgs; [bun];
           pre-commit = {
             languages.javascript.enable = true;
+            # Also run biome on .svelte files
+            settings.hooks.biome.types_or = ["svelte"];
             # Allow arbitrary line length in markdown (paragraph wrapping preferred)
             settings.hooks.markdownlint.settings.configuration.MD013.line_length = -1;
             # Remap sveltekit assets to correct folder for static link checking
