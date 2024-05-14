@@ -1,10 +1,10 @@
 <script lang="ts">
-    import '../app.css'
-    import { ModeWatcher, toggleMode } from 'mode-watcher'
-    import Sun from 'lucide-svelte/icons/sun'
-    import Moon from 'lucide-svelte/icons/moon'
-    import { Button } from '$lib/components/ui/button'
-    import * as Menubar from '$lib/components/ui/menubar'
+import "../app.css"
+import { Button } from "$lib/components/ui/button"
+import * as Menubar from "$lib/components/ui/menubar"
+import Moon from "lucide-svelte/icons/moon"
+import Sun from "lucide-svelte/icons/sun"
+import { ModeWatcher, toggleMode } from "mode-watcher"
 </script>
 
 <ModeWatcher />

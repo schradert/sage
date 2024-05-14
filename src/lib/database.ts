@@ -8,60 +8,60 @@ export const initialNodes: Node[] = [
     id: "1",
     type: "input",
     data: { label: "input" },
-    position
+    position,
   },
   {
     id: "2",
     data: { label: "node 2" },
-    position
+    position,
   },
   {
     id: "2a",
     data: { label: "node 2a" },
-    position
+    position,
   },
   {
     id: "2b",
     data: { label: "node 2b" },
-    position
+    position,
   },
   {
     id: "2c",
     data: { label: "node 2c" },
-    position
+    position,
   },
   {
     id: "2d",
     data: { label: "node 2d" },
-    position
+    position,
   },
   {
     id: "3",
     data: { label: "node 3" },
-    position
+    position,
   },
   {
     id: "4",
     data: { label: "node 4" },
-    position
+    position,
   },
   {
     id: "5",
     data: { label: "node 5" },
-    position
+    position,
   },
   {
     id: "6",
     type: "output",
     data: { label: "output" },
-    position
+    position,
   },
   {
     id: "7",
     type: "output",
     data: { label: "output" },
-    position
-  }
+    position,
+  },
 ]
 
 export const initialEdges: Edge[] = [
@@ -74,5 +74,5 @@ export const initialEdges: Edge[] = [
   { id: "e45", source: "4", target: "5", type: edgeType, animated: true },
   { id: "e56", source: "5", target: "6", type: edgeType, animated: true },
   { id: "e57", source: "5", target: "7", type: edgeType, animated: true },
-  { id: "e34", source: "3", target: "4", type: edgeType, animated: true }
+  { id: "e34", source: "3", target: "4", type: edgeType, animated: true },
 ]
