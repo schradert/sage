@@ -16,7 +16,8 @@
       "linter": {
         "rules": {
           "style": {
-            "useConst": "off"
+            "useConst": "off",
+            "useImportType": "off"
           }
         }
       }
