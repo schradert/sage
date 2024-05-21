@@ -1,199 +1,246 @@
-import type { Edge, Node } from "@xyflow/svelte"
+import { type Edge, type Node } from "@xyflow/svelte"
+// TODO convert to persisted
+import { persisted } from "svelte-persisted-store"
+// import { writable } from "svelte/store"
 
-const position = { x: 0, y: 0 }
-const edgeType = "smoothstep"
+const _nodes: Node[] = [
+    //  {
+    //   id: "skillet",
+    //     type: "group",
+    //     data: {},
 
-export const initialNodes: Node[] = [
+    // },
   {
     id: "ground-beef",
-    type: "input",
-    data: { label: "ground-beef" },
-    position,
+    type: "material",
+    data: {
+        label: "Ground Beef",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "chili-powder",
-    type: "input",
-    data: { label: "chili-powder" },
-    position,
+    type: "material",
+    data: {
+        label: "Chili Powder",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "cumin",
-    type: "input",
-    data: { label: "cumin" },
-    position,
+    type: "material",
+    data: {
+        label: "Cumin",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "oregano",
-    type: "input",
-    data: { label: "oregano" },
-    position,
+    type: "material",
+    data: {
+        label: "Oregano",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "garlic-powder",
-    type: "input",
-    data: { label: "garlic-powder" },
-    position,
+    type: "material",
+    data: {
+        label: "Garlic Powder",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "salt",
-    type: "input",
-    data: { label: "salt" },
-    position,
+    type: "material",
+    data: {
+        label: "Salt",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "black-pepper",
-    type: "input",
-    data: { label: "black-pepper" },
-    position,
+    type: "material",
+    data: {
+        label: "Black Pepper",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "tomato-paste",
-    type: "input",
-    data: { label: "tomato-paste" },
-    position,
+    type: "material",
+    data: {
+        label: "Tomato Paste",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "water",
-    type: "input",
-    data: { label: "water" },
-    position,
+    type: "material",
+    data: {
+        label: "Water",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "olive-oil",
-    type: "input",
-    data: { label: "olive-oil" },
-    position,
+    type: "material",
+    data: {
+        label: "Olive Oil",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "flour-tortillas",
-    type: "input",
-    data: { label: "flour-tortillas" },
-    position,
+    type: "material",
+    data: {
+        label: "Flour Tortillas",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "lettuce",
-    type: "input",
-    data: { label: "lettuce" },
-    position,
+    type: "material",
+    data: {
+        label: "Lettuce",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "shredded-cheese",
-    type: "input",
-    data: { label: "shredded-cheese" },
-    position,
+    type: "material",
+    data: {
+        label: "Shredded Cheese",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "tomatoes",
-    type: "input",
-    data: { label: "tomatoes" },
-    position,
+    type: "material",
+    data: {
+        label: "Tomatoes",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "red-onion",
-    type: "input",
-    data: { label: "red-onion" },
-    position,
+    type: "material",
+    data: {
+        label: "Red Onion",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "sour-cream",
-    type: "input",
-    data: { label: "sour-cream" },
-    position,
+    type: "material",
+    data: {
+        label: "Sour Cream",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "guacamole",
-    type: "input",
-    data: { label: "guacamole" },
-    position,
+    type: "material",
+    data: {
+        label: "Guacamole",
+        quantity: { amount: 10, unit: "lb" },
+    },
   },
   {
     id: "heat",
-    data: { label: "heat" },
-    position,
+      type: "step",
+    data: { label: "heat", level: "medium-high" },
+      // parentId: "skillet",
   },
   {
     id: "brown",
     data: { label: "brown" },
-    position,
+      type: "step",
+      // parentId: "skillet",
   },
   {
     id: "drain",
     data: { label: "drain" },
-    position,
+      type: "step",
+      // parentId: "skillet",
   },
   {
     id: "warm",
     data: { label: "warm" },
-    position,
+      type: "step",
   },
   {
     id: "season",
     data: { label: "season" },
-    position,
+      type: "step",
+      // parentId: "skillet",
   },
   {
     id: "plate",
     data: { label: "plate" },
-    position,
+      type: "step",
   },
   {
     id: "hot-oil",
     data: { label: "hot-oil" },
-    position,
+      // parentId: "skillet",
+    type: "material",
   },
   {
     id: "browned-beef",
     data: { label: "browned-beef" },
-    position,
+      // parentId: "skillet",
+    type: "material",
   },
   {
     id: "drained-browned-beef",
     data: { label: "drained-browned-beef" },
-    position,
+      // parentId: "skillet",
+    type: "material",
   },
   {
     id: "warm-tortillas",
     data: { label: "warm-tortillas" },
-    position,
+    type: "material",
   },
   {
     id: "seasoned-beef",
     data: { label: "seasoned-beef" },
-    position,
+    type: "material",
+      // parentId: "skillet",
   },
   {
     id: "fat",
-    type: "output",
+    type: "material",
     data: { label: "fat" },
-    position,
   },
   {
     id: "taco",
-    type: "output",
+    type: "material",
     data: { label: "taco" },
-    position,
   },
 ]
 
-export const initialEdges: Edge[] = [
-  { id: "1", source: "olive-oil", target: "heat", type: edgeType, animated: true },
-  { id: "2", source: "ground-beef", target: "brown", type: edgeType, animated: true },
+const edgeType = "smoothstep"
+const _edges: Edge[] = [
+  { id: "1", source: "olive-oil", target: "heat", type: edgeType, animated: true, data: { quantity: { amount: 1, unit: "tbsp" } } },
+  { id: "2", source: "ground-beef", target: "brown", type: edgeType, animated: true, data: { quantity: { amount: 1, unit: "lb" } } },
   { id: "3", source: "heat", target: "hot-oil", type: edgeType, animated: true },
   { id: "4", source: "hot-oil", target: "brown", type: edgeType, animated: true },
-  { id: "5", source: "brown", target: "browned-beef", type: edgeType, animated: true },
+  { id: "5", source: "brown", target: "browned-beef", type: edgeType, animated: true, data: { time: { amount: 7, unit: "min" } } },
   { id: "6", source: "browned-beef", target: "drain", type: edgeType, animated: true },
   { id: "7", source: "drain", target: "drained-browned-beef", type: edgeType, animated: true },
   { id: "8", source: "drain", target: "fat", type: edgeType, animated: true },
   { id: "9", source: "drained-browned-beef", target: "season", type: edgeType, animated: true },
-  { id: "10", source: "chili-powder", target: "season", type: edgeType, animated: true },
-  { id: "11", source: "cumin", target: "season", type: edgeType, animated: true },
-  { id: "12", source: "oregano", target: "season", type: edgeType, animated: true },
-  { id: "13", source: "garlic-powder", target: "season", type: edgeType, animated: true },
-  { id: "14", source: "salt", target: "season", type: edgeType, animated: true },
-  { id: "15", source: "black-pepper", target: "season", type: edgeType, animated: true },
-  { id: "16", source: "tomato-paste", target: "season", type: edgeType, animated: true },
-  { id: "17", source: "water", target: "season", type: edgeType, animated: true },
-  { id: "18", source: "flour-tortillas", target: "warm", type: edgeType, animated: true },
+  { id: "10", source: "chili-powder", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 2, unit: "tsp" } } },
+  { id: "11", source: "cumin", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 2, unit: "tsp" } } },
+  { id: "12", source: "oregano", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 0.5, unit: "tsp" } } },
+  { id: "13", source: "garlic-powder", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 0.5, unit: "tsp" } } },
+  { id: "14", source: "salt", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 0.5, unit: "tsp" } } },
+  { id: "15", source: "black-pepper", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 0.5, unit: "tsp" } } },
+  { id: "16", source: "tomato-paste", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 2, unit: "tbsp" } } },
+  { id: "17", source: "water", target: "season", type: edgeType, animated: true, data: { quantity: { amount: 0.5, unit: "cup" } } },
+  { id: "18", source: "flour-tortillas", target: "warm", type: edgeType, animated: true, data: { quantity: { amount: 8, unit: "unit" } } },
   { id: "19", source: "warm", target: "warm-tortillas", type: edgeType, animated: true },
   { id: "20", source: "warm-tortillas", target: "plate", type: edgeType, animated: true },
   { id: "21", source: "lettuce", target: "plate", type: edgeType, animated: true },
@@ -206,3 +253,9 @@ export const initialEdges: Edge[] = [
   { id: "28", source: "seasoned-beef", target: "plate", type: edgeType, animated: true },
   { id: "29", source: "plate", target: "taco", type: edgeType, animated: true },
 ]
+
+export const nodes = persisted("nodes", _nodes)
+export const edges = persisted("edges", _edges)
+export const orientation = persisted("orientation", <"vertical" | "horizontal"> "horizontal")
+export const detailsOpen = persisted("detailsOpen", <boolean> false)
+export const menuOpen = persisted("menuOpen", <boolean> false)

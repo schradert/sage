@@ -3,95 +3,309 @@ import {
   Background,
   ConnectionLineType,
   Controls,
-  type Edge,
+  type IsValidConnection,
+  // type Edge,
   MiniMap,
   type Node,
+  type NodeTypes,
+  type OnConnectEnd,
+  type OnConnectStart,
   Panel,
   Position,
   SvelteFlow,
+  useStore,
   useSvelteFlow,
 } from "@xyflow/svelte"
+import { Render, Subscribe, createTable } from "svelte-headless-table"
+import { v4 as uuidv4 } from "uuid"
+import "@xyflow/svelte/dist/style.css"
+import { mode } from "mode-watcher"
+
+import { Badge } from "$lib/components/ui/badge"
+import { Button } from "$lib/components/ui/button"
+import * as Table from "$lib/components/ui/table"
+import { edges, nodes, orientation } from "$lib/database"
+import { Move, MoveHorizontal, MoveVertical, ScatterChart, X } from "lucide-svelte"
+import MaterialNode from "./MaterialNode.svelte"
+import StepNode from "./StepNode.svelte"
+const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
+import { flatten } from "$lib/functions"
 import ELK from "elkjs/lib/elk.bundled.js"
 import { onMount } from "svelte"
-import { writable } from "svelte/store"
-import "@xyflow/svelte/dist/style.css"
+import { readable } from "svelte/store"
 
-import { initialEdges, initialNodes } from "$lib/database"
+// import DataNode from "./DataNode.svelte";
 
-const nodes = writable<Node[]>([])
-const edges = writable<Edge[]>([])
-const { fitView } = useSvelteFlow()
+$: colorMode = $mode
+$: selectedNodes = $nodes.filter(n => n.selected)
 
-const elk = new ELK()
-const elkOptions = {
-  "elk.algorithm": "layered",
-  "elk.layered.spacing.nodeNodeBetweenLayers": "100",
-  "elk.spacing.nodeNode": "80",
+const table = createTable(readable($nodes.filter(n => Object.hasOwn(n.data, "quantity"))))
+const columns = table.createColumns([
+  table.column({ accessor: "id", header: "id" }),
+  table.column({ accessor: n => n.data.label, header: "label" }),
+  table.column({ accessor: n => n.data.quantity.amount, header: "amount" }),
+  table.column({ accessor: n => n.data.quantity.unit, header: "unit" }),
+])
+const { headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns)
+
+let connectingNodeId: string | null
+const onconnectend: OnConnectEnd = event => {
+  if (connectingNodeId === null) return
+  const targetIsPane = (event.target as Element)?.classList.contains("svelte-flow__pane")
+  if (targetIsPane) {
+    const id = uuidv4()
+    const newNode: Node = {
+      id,
+      data: { label: "New Node" },
+      type: $nodes.find(n => n.id === connectingNodeId).type === "material" ? "step" : "material",
+      position: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+      // center around drop point
+      origin: [0.5, 0.0],
+    }
+    $nodes.push(newNode)
+    $edges.push({
+      source: connectingNodeId,
+      target: id,
+      id: `${connectingNodeId}_${id}`,
+    })
+
+    $nodes = $nodes
+    $edges = $edges
+    connectingNodeId = null
+  }
+}
+function onNodeDrag({ detail: { targetNode } }) {
+  const intersections = getIntersectingNodes(targetNode).map(node => node.id)
+  $nodes.forEach(node => {
+    node.class = intersections.includes(node.id) ? "highlight" : ""
+  })
+  $nodes = $nodes
 }
 
-function getLayoutElements(nodes: Node[], edges: Edge[], options = {}) {
-  const isHorizontal = options?.["elk.direction"] === "RIGHT"
+function onDragOver(event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move"
+}
+
+function onDrop(event: DragEvent) {
+  event.preventDefault()
+  if (!event.dataTransfer) return null
+  const newNode: Node = {
+    id: uuidv4(),
+    type: event.dataTransfer.getData("application/svelteflow"),
+    position: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+    data: { label: "Another node" },
+    origin: [0.5, 0.0],
+    sourcePosition: $orientation === "horizontal" ? Position.Right : Position.Bottom,
+    targetPosition: $orientation === "horizontal" ? Position.Left : Position.Top,
+  }
+  $nodes.push(newNode)
+  $nodes = $nodes
+}
+
+const isValidConnection: IsValidConnection = connection => {
+  const targetNode = $nodes.find(n => n.id === connection.target)
+  const sourceNode = $nodes.find(n => n.id === connection.source)
+  return targetNode.type !== sourceNode.type
+}
+
+const nodeTypes: NodeTypes = {
+  material: MaterialNode,
+  step: StepNode,
+  // data: DataNode,
+}
+
+const connectionLineType = ConnectionLineType.SmoothStep
+const defaultEdgeOptions = { type: "smoothstep", animated: true }
+const onconnectstart: OnConnectStart = (_, { nodeId }) => {
+  connectingNodeId = nodeId
+}
+const onDragStart = (event: DragEvent, nodeType: string) => {
+  if (!event.dataTransfer) return null
+  event.dataTransfer.setData("application/svelteflow", nodeType)
+  event.dataTransfer.effectAllowed = "move"
+}
+
+function positionNodes() {
+  const groupNodes = $nodes.filter(node => node.type === "group")
+  const mainNodes = $nodes.filter(node => node.type !== "group")
+  const isHorizontal = $orientation === "horizontal"
+  const elk = new ELK()
   const graph = {
     id: "root",
-    layoutOptions: options,
-    edges: edges,
-    children: nodes.map(node => ({
+    layoutOptions: {
+      "elk.algorithm": "layered",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "40",
+      "elk.spacing.nodeNode": "40",
+      "elk.direction": isHorizontal ? "RIGHT" : "DOWN",
+    },
+    edges: $edges,
+    children: mainNodes.map(node => ({
       ...node,
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       // Hardcode a width and height for elk to use when layouting
-      width: 150,
+      width: 100,
       height: 50,
+      position: { x: 0, y: 0 },
     })),
   }
 
-  return elk
+  elk
     .layout(graph)
-    .then(layoutGraph => ({
-      edges: layoutGraph.edges,
-      nodes: layoutGraph.children.map(node => ({
+    .then(layoutGraph => {
+      const layoutMainNodes = layoutGraph.children.map(node => ({
         ...node,
         // Nest x, y under position as xyflow expects it
         position: { x: node.x, y: node.y },
-      })),
-    }))
+      }))
+      const layoutGroupNodes = groupNodes.map(node => {
+        const children = layoutMainNodes.filter(n => n.parentId === node.id)
+        const rect = children.reduce(
+          (values, child) => ({
+            minX: Math.min(values.minX, child.position.x),
+            maxX: Math.max(values.maxX, child.position.x),
+            minY: Math.min(values.minY, child.position.y),
+            maxY: Math.max(values.maxY, child.position.y),
+          }),
+          {
+            minX: Number.POSITIVE_INFINITY,
+            maxX: Number.NEGATIVE_INFINITY,
+            minY: Number.POSITIVE_INFINITY,
+            maxY: Number.NEGATIVE_INFINITY,
+          },
+        )
+        const margin = 5
+        return {
+          ...node,
+          position: { x: rect.minX - margin, y: rect.minY - margin },
+          width: rect.maxX - rect.minX + 2 * margin,
+          height: rect.maxY - rect.minY + 2 * margin,
+        }
+      })
+      $nodes = layoutGroupNodes.concat(layoutMainNodes)
+      $edges = layoutGraph.edges
+      fitView()
+      window.requestAnimationFrame(() => fitView())
+    })
     .catch(console.error)
 }
 
-function onLayout(direction: string, useInitialNodes = false) {
-  const opts = { "elk.direction": direction, ...elkOptions }
-  const ns = useInitialNodes ? initialNodes : $nodes
-  const es = useInitialNodes ? initialEdges : $edges
-
-  getLayoutElements(ns, es, opts).then(({ nodes: layoutNodes, edges: layoutEdges }) => {
-    $nodes = layoutNodes
-    $edges = layoutEdges
-
-    fitView()
-    window.requestAnimationFrame(() => fitView())
-  })
+let detailsOpen = false
+function toggleDetails() {
+  detailsOpen = !detailsOpen
 }
 
 onMount(() => {
-  onLayout("RIGHT", true)
+  if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 })
 </script>
 
-<div style="height:100vh;">
-  <SvelteFlow
-    {nodes}
-    {edges}
-    fitView
-    connectionLineType={ConnectionLineType.SmoothStep}
-    defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
-    on:nodeclick={(event) => console.log('on node click', event.detail.node)}
-  >
-    <Panel position="top-right">
-      <button on:click={() => onLayout('DOWN')}>Vertical</button>
-      <button on:click={() => onLayout('RIGHT')}>Horizontal</button>
-    </Panel>
-    <Controls />
-    <Background />
-    <MiniMap />
-  </SvelteFlow>
-</div>
+<main class="h-full relative">
+    <SvelteFlow
+      {nodes}
+      {edges}
+      {isValidConnection}
+      {colorMode}
+      {connectionLineType}
+      {defaultEdgeOptions}
+      {onconnectstart}
+      {onconnectend}
+      {nodeTypes}
+      on:nodedrag={onNodeDrag}
+      on:drop={onDrop}
+      on:dragover={onDragOver}
+      fitView
+    >
+      <Panel position="top-left">
+        <Button
+          size="icon"
+          on:click={() => {
+            $orientation = $orientation === 'horizontal' ? 'vertical' : 'horizontal'
+            positionNodes()
+          }}
+        >
+          <MoveHorizontal class="h-[1.2rem] w-[1.2rem] transition-all {$orientation === "vertical" ? "scale-100" : "scale-0"}" />
+          <MoveVertical class="absolute h-[1.2rem] w-[1.2rem] transition-all {$orientation === "horizontal" ? "scale-100" : "scale-0"}" />
+          <span class="sr-only">Toggle layout orientation</span>
+        </Button>
+        <Button size="icon" on:click={positionNodes}>
+          <Move class="rotate-45" />
+          <span class="sr-only">Automatically place nodes</span>
+        </Button>
+        <Badge on:dragstart={event => onDragStart(event, "material")} draggable>Material</Badge>
+        <Badge on:dragstart={event => onDragStart(event, "step")} draggable>Step</Badge>
+        <Button size="icon" on:click={toggleDetails}><ScatterChart /></Button>
+      </Panel>
+      <Controls position="bottom-right"/>
+      <Background />
+      <MiniMap position="bottom-left" />
+    </SvelteFlow>
+    <div id="focus" class="h-full max-h-full w-[40%] {(!detailsOpen) ? "invisible" : ""} absolute top-0 overflow-y-auto right-0 bg-secondary">
+      <Button size="icon" on:click={toggleDetails}><X /></Button>
+        <Table.Root {...$tableAttrs}>
+          <Table.Header>
+            {#each $headerRows as headerRow}
+              <Subscribe rowAttrs={headerRow.attrs()}>
+                <Table.Row>
+                  {#each headerRow.cells as cell (cell.id)}
+                    <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
+                      <Table.Head {...attrs}>
+                        <Render of={cell.render()} />
+                      </Table.Head>
+                    </Subscribe>
+                  {/each}
+                </Table.Row>
+              </Subscribe>
+            {/each}
+          </Table.Header>
+          <Table.Body {...$tableBodyAttrs}>
+            {#each $pageRows as row (row.id)}
+              <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
+                <Table.Row {...rowAttrs}>
+                  {#each row.cells as cell (cell.id)}
+                    <Subscribe attrs={cell.attrs()} let:attrs>
+                      <Table.Cell {...attrs}>
+                        <Render of={cell.render()} />
+                      </Table.Cell>
+                    </Subscribe>
+                  {/each}
+                </Table.Row>
+              </Subscribe>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+    </div>
+</main>
+
+<style>
+:global(.svelte-flow__node.highlight) {
+  background-color: black !important;
+  color: white;
+ }
+:global(.svelte-flow__node) {
+  border-radius: 20%;
+  border-width: 2px;
+  border-color: black;
+  color: black;
+ }
+:global(.svelte-flow__handle) {
+  width: 10px;
+  height: 10px;
+}
+:global(.svelte-flow__handle.connectingto) {
+  background: #ff6060;
+}
+:global(.svelte-flow__handle.valid) {
+  background: #55dd99;
+}
+:global(.svelte-flow__node-material) {
+  background-color: #7FFFD4;
+}
+:global(.svelte-flow__node-step) {
+  background-color: #FF7FA9;
+}
+:global(.svelte-flow__node.selected) {
+  background-color: #D37FFF;
+ }
+</style>

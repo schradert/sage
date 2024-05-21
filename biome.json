@@ -10,6 +10,13 @@
       "arrowParentheses": "asNeeded"
     }
   },
+  "linter": {
+    "rules": {
+      "complexity": {
+        "noForEach": "off"
+      }
+    }
+  },
   "overrides": [
     {
       "include": ["*.svelte"],
@@ -18,6 +25,9 @@
           "style": {
             "useConst": "off",
             "useImportType": "off"
+          },
+          "correctness": {
+            "noSelfAssign": "off"
           }
         }
       }

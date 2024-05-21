@@ -1,20 +1,25 @@
 <script lang="ts">
 import "../app.css"
 import { Button } from "$lib/components/ui/button"
-import * as Menubar from "$lib/components/ui/menubar"
-import Moon from "lucide-svelte/icons/moon"
-import Sun from "lucide-svelte/icons/sun"
+import { Toggle } from "$lib/components/ui/toggle"
+import { menuOpen } from "$lib/database"
+import { Moon, PanelRightClose, PanelRightOpen, Sun } from "lucide-svelte"
 import { ModeWatcher, toggleMode } from "mode-watcher"
 </script>
 
-<ModeWatcher />
-<Menubar.Root>
-    <Menubar.Menu>
+<div class="h-screen w-screen flex flex-col">
+    <ModeWatcher />
+    <div class="flex justify-between bg-primary p-1">
+        <Toggle pressed={$menuOpen} on:click={() => $menuOpen = !$menuOpen}>
+            <PanelRightOpen class="h-[1.2rem] w-[1.2rem] transition-all {$menuOpen ? "scale-100" : "scale-0"}" />
+            <PanelRightClose class="absolute h-[1.2rem] w-[1.2rem] transition-all {$menuOpen ? "scale-0" : "scale-100"}" />
+            <span class="sr-only">Toggle sidebar</span>
+        </Toggle>
         <Button on:click={toggleMode} variant="outline" size="icon">
-            <Sun class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <Moon class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Sun class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span class="sr-only">Toggle theme</span>
         </Button>
-    </Menubar.Menu>
-</Menubar.Root>
-<slot />
+    </div>
+    <slot />
+</div>
