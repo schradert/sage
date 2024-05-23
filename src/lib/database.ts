@@ -257,5 +257,4 @@ const _edges: Edge[] = [
 export const nodes = persisted("nodes", _nodes)
 export const edges = persisted("edges", _edges)
 export const orientation = persisted("orientation", <"vertical" | "horizontal"> "horizontal")
-export const detailsOpen = persisted("detailsOpen", <boolean> false)
 export const menuOpen = persisted("menuOpen", <boolean> false)
