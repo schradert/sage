@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as ContextMenu from "$lib/components/ui/context-menu"
-import { capitalize } from "$lib/functions"
+import { capitalize } from "$lib/utils"
 import { useEdges, useNodes } from "@xyflow/svelte"
 import { v4 as uuidv4 } from "uuid"
 export let id: string

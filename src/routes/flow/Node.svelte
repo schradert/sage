@@ -1,5 +1,6 @@
 <script lang="ts">
 import { orientation } from "$lib/database"
+import { detailsOpen } from "$lib/database"
 import { Handle, type NodeProps, Position } from "@xyflow/svelte"
 import ContextMenu from "./ContextMenu.svelte"
 
@@ -12,7 +13,7 @@ $$restProps
 </script>
 
 <Handle type="target" position={$orientation === "horizontal" ? Position.Left : Position.Top} {isConnectable} />
-<div class="h-full w-full">
+<div class="h-full w-full" on:dblclick={() => $detailsOpen = true}>
     <ContextMenu {id} {type}>
         {data.label}
     </ContextMenu>

@@ -14,6 +14,8 @@ type FlyAndScaleParams = {
   duration?: number
 }
 
+export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+
 export const flyAndScale = (
   node: Element,
   params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 },

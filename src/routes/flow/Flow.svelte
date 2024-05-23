@@ -16,7 +16,18 @@ import {
   useStore,
   useSvelteFlow,
 } from "@xyflow/svelte"
-import { Render, Subscribe, createTable } from "svelte-headless-table"
+import {
+  type Column,
+  type DataBodyRow,
+  type DataLabel,
+  type HeaderRow,
+  Render,
+  Subscribe,
+  type TableAttributes,
+  type TableBodyAttributes,
+  createRender,
+  createTable,
+} from "svelte-headless-table"
 import { v4 as uuidv4 } from "uuid"
 import "@xyflow/svelte/dist/style.css"
 import { mode } from "mode-watcher"
@@ -24,29 +35,59 @@ import { mode } from "mode-watcher"
 import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
 import * as Table from "$lib/components/ui/table"
-import { edges, nodes, orientation } from "$lib/database"
+import { detailsOpen, edges, nodes, orientation, selectedNodes } from "$lib/database"
 import { Move, MoveHorizontal, MoveVertical, ScatterChart, X } from "lucide-svelte"
 import MaterialNode from "./MaterialNode.svelte"
 import StepNode from "./StepNode.svelte"
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
-import { flatten } from "$lib/functions"
+import { capitalize } from "$lib/utils"
 import ELK from "elkjs/lib/elk.bundled.js"
+import { flatten } from "flat"
+import * as R from "remeda"
 import { onMount } from "svelte"
-import { readable } from "svelte/store"
+import EditableCell from "./EditableCell.svelte"
 
 // import DataNode from "./DataNode.svelte";
 
 $: colorMode = $mode
-$: selectedNodes = $nodes.filter(n => n.selected)
 
-const table = createTable(readable($nodes.filter(n => Object.hasOwn(n.data, "quantity"))))
-const columns = table.createColumns([
-  table.column({ accessor: "id", header: "id" }),
-  table.column({ accessor: n => n.data.label, header: "label" }),
-  table.column({ accessor: n => n.data.quantity.amount, header: "amount" }),
-  table.column({ accessor: n => n.data.quantity.unit, header: "unit" }),
-])
-const { headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns)
+const table = createTable(selectedNodes)
+let headerRows: HeaderRow<Node>[]
+let pageRows: DataBodyRow<Node>[]
+let tableAttrs: TableAttributes<Node>
+let tableBodyAttrs: TableBodyAttributes<Node>
+$: {
+  const monsterNode = R.reduce($selectedNodes, R.mergeDeep, {})
+  const schema = R.mapValues(flatten(monsterNode), R.type)
+
+  const onUpdateValue = (rowDataId: string, columnId: string, newValue: unknown) => {
+    const schemaType = schema[columnId]
+    const newValueParsed = schemaType === "[object Number]" && newValue ? Number(newValue) : newValue
+    const node = $selectedNodes[Number(rowDataId)]
+    $nodes[$nodes.indexOf(node)] = R.setPath(node, R.stringToPath(columnId), newValueParsed)
+    $nodes = $nodes
+  }
+  const EditableCellLabel: DataLabel<unknown> = ({ column, row, value }) =>
+    createRender(EditableCell, { row, column, value, onUpdateValue })
+  const generateColumns = (obj, roots: string[] = []): Column<Node>[] =>
+    Object.entries(obj).map(([key, value]) => {
+      const path = roots.concat([key])
+      return Object.prototype.toString.call(value) === "[object Object]"
+        ? table.group({
+            header: capitalize(key),
+            columns: generateColumns(value, path),
+          })
+        : table.column({
+            header: capitalize(key),
+            cell: EditableCellLabel,
+            id: path.join("."),
+            accessor: item => R.pathOr(item, path, undefined),
+          })
+    })
+
+  const columns = table.createColumns(generateColumns(monsterNode ?? {}))
+  ;({ headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns))
+}
 
 let connectingNodeId: string | null
 const onconnectend: OnConnectEnd = event => {
@@ -191,11 +232,6 @@ function positionNodes() {
     .catch(console.error)
 }
 
-let detailsOpen = false
-function toggleDetails() {
-  detailsOpen = !detailsOpen
-}
-
 onMount(() => {
   if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 })
@@ -235,14 +271,14 @@ onMount(() => {
         </Button>
         <Badge on:dragstart={event => onDragStart(event, "material")} draggable>Material</Badge>
         <Badge on:dragstart={event => onDragStart(event, "step")} draggable>Step</Badge>
-        <Button size="icon" on:click={toggleDetails}><ScatterChart /></Button>
+        <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
       </Panel>
       <Controls position="bottom-right"/>
       <Background />
       <MiniMap position="bottom-left" />
     </SvelteFlow>
-    <div id="focus" class="h-full max-h-full w-[40%] {(!detailsOpen) ? "invisible" : ""} absolute top-0 overflow-y-auto right-0 bg-secondary">
-      <Button size="icon" on:click={toggleDetails}><X /></Button>
+    <div id="focus" class="h-full max-h-full w-[40%] {(!$detailsOpen) ? "invisible" : ""} absolute top-0 overflow-y-auto right-0 bg-secondary">
+      <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><X /></Button>
         <Table.Root {...$tableAttrs}>
           <Table.Header>
             {#each $headerRows as headerRow}
