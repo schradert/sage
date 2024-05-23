@@ -45,6 +45,7 @@ import ELK from "elkjs/lib/elk.bundled.js"
 import { flatten } from "flat"
 import * as R from "remeda"
 import { onMount } from "svelte"
+import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
 
 // import DataNode from "./DataNode.svelte";
@@ -59,7 +60,6 @@ let tableBodyAttrs: TableBodyAttributes<Node>
 $: {
   const monsterNode = R.reduce($selectedNodes, R.mergeDeep, {})
   const schema = R.mapValues(flatten(monsterNode), R.type)
-
   const onUpdateValue = (rowDataId: string, columnId: string, newValue: unknown) => {
     const schemaType = schema[columnId]
     const newValueParsed = schemaType === "[object Number]" && newValue ? Number(newValue) : newValue
@@ -84,7 +84,6 @@ $: {
             accessor: item => R.pathOr(item, path, undefined),
           })
     })
-
   const columns = table.createColumns(generateColumns(monsterNode ?? {}))
   ;({ headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns))
 }
@@ -277,41 +276,43 @@ onMount(() => {
       <Background />
       <MiniMap position="bottom-left" />
     </SvelteFlow>
-    <div id="focus" class="h-full max-h-full w-[40%] {(!$detailsOpen) ? "invisible" : ""} absolute top-0 overflow-y-auto right-0 bg-secondary">
-      <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><X /></Button>
-        <Table.Root {...$tableAttrs}>
-          <Table.Header>
-            {#each $headerRows as headerRow}
-              <Subscribe rowAttrs={headerRow.attrs()}>
-                <Table.Row>
-                  {#each headerRow.cells as cell (cell.id)}
-                    <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                      <Table.Head {...attrs}>
-                        <Render of={cell.render()} />
-                      </Table.Head>
-                    </Subscribe>
-                  {/each}
-                </Table.Row>
-              </Subscribe>
-            {/each}
-          </Table.Header>
-          <Table.Body {...$tableBodyAttrs}>
-            {#each $pageRows as row (row.id)}
-              <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-                <Table.Row {...rowAttrs}>
-                  {#each row.cells as cell (cell.id)}
-                    <Subscribe attrs={cell.attrs()} let:attrs>
-                      <Table.Cell {...attrs}>
-                        <Render of={cell.render()} />
-                      </Table.Cell>
-                    </Subscribe>
-                  {/each}
-                </Table.Row>
-              </Subscribe>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-    </div>
+    {#if $detailsOpen}
+      <div id="focus" class="h-full max-h-full w-[40%] absolute top-0 overflow-y-auto right-0 bg-secondary" transition:slide={{axis: 'x', duration: 200}}>
+        <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><X /></Button>
+          <Table.Root {...$tableAttrs}>
+            <Table.Header>
+              {#each $headerRows as headerRow}
+                <Subscribe rowAttrs={headerRow.attrs()}>
+                  <Table.Row>
+                    {#each headerRow.cells as cell (cell.id)}
+                      <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
+                        <Table.Head {...attrs}>
+                          <Render of={cell.render()} />
+                        </Table.Head>
+                      </Subscribe>
+                    {/each}
+                  </Table.Row>
+                </Subscribe>
+              {/each}
+            </Table.Header>
+            <Table.Body {...$tableBodyAttrs}>
+              {#each $pageRows as row (row.id)}
+                <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
+                  <Table.Row {...rowAttrs}>
+                    {#each row.cells as cell (cell.id)}
+                      <Subscribe attrs={cell.attrs()} let:attrs>
+                        <Table.Cell {...attrs}>
+                          <Render of={cell.render()} />
+                        </Table.Cell>
+                      </Subscribe>
+                    {/each}
+                  </Table.Row>
+                </Subscribe>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+      </div>
+    {/if}
 </main>
 
 <style>
