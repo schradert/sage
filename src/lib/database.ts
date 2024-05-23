@@ -1,7 +1,7 @@
 import { type Edge, type Node } from "@xyflow/svelte"
 // TODO convert to persisted
 import { persisted } from "svelte-persisted-store"
-// import { writable } from "svelte/store"
+import { derived } from "svelte/store"
 
 const _nodes: Node[] = [
     //  {
@@ -255,6 +255,8 @@ const _edges: Edge[] = [
 ]
 
 export const nodes = persisted("nodes", _nodes)
+export const selectedNodes = derived(nodes, $nodes => $nodes.filter(n => n.selected))
 export const edges = persisted("edges", _edges)
 export const orientation = persisted("orientation", <"vertical" | "horizontal"> "horizontal")
+export const detailsOpen = persisted("detailsOpen", <boolean> false)
 export const menuOpen = persisted("menuOpen", <boolean> false)
