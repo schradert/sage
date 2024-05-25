@@ -28,6 +28,7 @@ import {
   createRender,
   createTable,
 } from "svelte-headless-table"
+import { addSortBy } from "svelte-headless-table/plugins";
 import { v4 as uuidv4 } from "uuid"
 import "@xyflow/svelte/dist/style.css"
 import { mode } from "mode-watcher"
@@ -47,23 +48,30 @@ import * as R from "remeda"
 import { onMount } from "svelte"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
+  import { derived } from "svelte/store";
 
 // import DataNode from "./DataNode.svelte";
 
 $: colorMode = $mode
 
-const table = createTable(selectedNodes)
+const nodesInTable = derived([nodes], ([newNodes], setFn) => {
+  const anySelected = newNodes.reduce((acc, n) => acc || !!n.selected, false);
+  const res = newNodes.filter(n => !anySelected || n.selected);
+  setFn(res);
+});
+
+const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: 'id', order: 'asc' }] }) });
 let headerRows: HeaderRow<Node>[]
 let pageRows: DataBodyRow<Node>[]
 let tableAttrs: TableAttributes<Node>
 let tableBodyAttrs: TableBodyAttributes<Node>
 $: {
-  const monsterNode = R.reduce($selectedNodes, R.mergeDeep, {})
+  const monsterNode = R.reduce($nodesInTable, R.mergeDeep, {})
   const schema = R.mapValues(flatten(monsterNode), R.type)
   const onUpdateValue = (rowDataId: string, columnId: string, newValue: unknown) => {
     const schemaType = schema[columnId]
     const newValueParsed = schemaType === "[object Number]" && newValue ? Number(newValue) : newValue
-    const node = $selectedNodes[Number(rowDataId)]
+    const node = $nodesInTable[Number(rowDataId)]
     $nodes[$nodes.indexOf(node)] = R.setPath(node, R.stringToPath(columnId), newValueParsed)
     $nodes = $nodes
   }
@@ -81,7 +89,7 @@ $: {
             header: capitalize(key),
             cell: EditableCellLabel,
             id: path.join("."),
-            accessor: item => R.pathOr(item, path, undefined),
+            accessor: item => R.pathOr(item, path, '-'),
           })
     })
   const columns = table.createColumns(generateColumns(monsterNode ?? {}))
@@ -234,6 +242,7 @@ function positionNodes() {
 onMount(() => {
   if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 })
+
 </script>
 
 <main class="h-full relative">
