@@ -34,9 +34,10 @@ import { mode } from "mode-watcher"
 
 import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
+import * as Combobox from "$lib/components/ui/combobox"
 import * as Table from "$lib/components/ui/table"
-import { detailsOpen, edges, nodes, orientation, selectedNodes } from "$lib/stores"
-import { Move, MoveHorizontal, MoveVertical, ScatterChart, X } from "lucide-svelte"
+import { activeGraph, detailsOpen, edges, graphs, nodes, orientation, selectedNodes } from "$lib/stores"
+import { Check, Move, MoveHorizontal, MoveVertical, ScatterChart, X } from "lucide-svelte"
 import MaterialNode from "./MaterialNode.svelte"
 import StepNode from "./StepNode.svelte"
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
@@ -231,6 +232,15 @@ function positionNodes() {
     .catch(console.error)
 }
 
+let inputValue = ""
+let touchedInput = false
+let filteredGraphNames: string[]
+$: {
+  const graphNames = Object.keys($graphs)
+  filteredGraphNames =
+    inputValue && touchedInput ? graphNames.filter(name => name.toLowerCase().includes(inputValue)) : graphNames
+}
+
 onMount(() => {
   if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 })
@@ -271,6 +281,31 @@ onMount(() => {
         <Badge on:dragstart={event => onDragStart(event, "material")} draggable>Material</Badge>
         <Badge on:dragstart={event => onDragStart(event, "step")} draggable>Step</Badge>
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
+      </Panel>
+      <Panel position="top-center">
+        <Combobox.Root
+          required
+          bind:inputValue
+          bind:touchedInput
+          onSelectedChange={({ value })=> $activeGraph = value}
+        >
+          <Combobox.Input />
+          <Combobox.Label />
+          <Combobox.Content>
+            {#each filteredGraphNames as name}
+              <Combobox.Item value={name} label={name}>
+                {name}
+                <Combobox.ItemIndicator><Check /></Combobox.ItemIndicator>
+              </Combobox.Item>
+            {:else}
+              <span>No graphs found</span>
+            {/each}
+            <!-- TODO why is this not detected as a valid export -->
+            <!-- <Combobox.Separator /> -->
+          </Combobox.Content>
+          <Combobox.Arrow />
+          <Combobox.HiddenInput />
+        </Combobox.Root>
       </Panel>
       <Controls position="bottom-right"/>
       <Background />
