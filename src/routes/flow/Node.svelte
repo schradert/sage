@@ -1,6 +1,6 @@
 <script lang="ts">
-import { orientation } from "$lib/database"
-import { detailsOpen } from "$lib/database"
+import { orientation } from "$lib/stores"
+import { detailsOpen } from "$lib/stores"
 import { Handle, type NodeProps, Position } from "@xyflow/svelte"
 import ContextMenu from "./ContextMenu.svelte"
 

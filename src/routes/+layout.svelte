@@ -2,7 +2,7 @@
 import "../app.css"
 import { Button } from "$lib/components/ui/button"
 import { Toggle } from "$lib/components/ui/toggle"
-import { menuOpen } from "$lib/database"
+import { menuOpen } from "$lib/stores"
 import { Moon, PanelRightClose, PanelRightOpen, Sun } from "lucide-svelte"
 import { ModeWatcher, toggleMode } from "mode-watcher"
 </script>
