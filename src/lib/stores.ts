@@ -1,6 +1,7 @@
 import { derived, writable } from "svelte/store"
 import { writableDerived, propertyStore } from "svelte-writable-derived"
-import { graphs, type Graphs, type GraphName } from "./database"
+import { graphs } from "./database"
+import { type GraphName, type Graphs } from "./types"
 
 export { graphs }
 export const activeGraph = writable(<GraphName> "First")
