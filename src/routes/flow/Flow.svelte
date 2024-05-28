@@ -64,12 +64,9 @@ function refreshGraph(assign = true) {
 
 $: colorMode = $mode
 
-const nodesInTable = derived([nodes], ([newNodes], setFn) => {
-  const anySelected = newNodes.reduce((acc, n) => acc || !!n.selected, false)
-  const res = newNodes.filter(n => !anySelected || n.selected)
-  setFn(res)
-})
-
+const nodesInTable = derived([nodes, selectedNodes], ([$nodes, $selectedNodes]) =>
+  $selectedNodes.length > 0 ? $selectedNodes : $nodes,
+)
 const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: "id", order: "asc" }] }) })
 let headerRows: HeaderRow<Node>[]
 let pageRows: DataBodyRow<Node>[]
