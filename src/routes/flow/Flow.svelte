@@ -67,7 +67,7 @@ $: colorMode = $mode
 const nodesInTable = derived([nodes, selectedNodes], ([$nodes, $selectedNodes]) =>
   $selectedNodes.length > 0 ? $selectedNodes : $nodes,
 )
-const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: "id", order: "asc" }] }) })
+const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: "data.label", order: "asc" }] }) })
 let headerRows: HeaderRow<Node>[]
 let pageRows: DataBodyRow<Node>[]
 let tableAttrs: TableAttributes<Node>
@@ -97,6 +97,7 @@ $: {
             cell: EditableCellLabel,
             id: path.join("."),
             accessor: item => R.pathOr(item, path, "-"),
+            plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
           })
     })
   const columns = table.createColumns(generateColumns(monsterNode ?? {}))
