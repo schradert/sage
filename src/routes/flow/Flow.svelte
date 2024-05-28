@@ -51,6 +51,15 @@ import EditableCell from "./EditableCell.svelte"
 
 // import DataNode from "./DataNode.svelte";
 
+function refreshGraph(assign = true) {
+  if (assign) {
+    $nodes = $nodes
+    $edges = $edges
+  }
+  fitView()
+  window.requestAnimationFrame(() => fitView())
+}
+
 $: colorMode = $mode
 
 const table = createTable(selectedNodes)
@@ -226,8 +235,7 @@ function positionNodes() {
       })
       $nodes = layoutGroupNodes.concat(layoutMainNodes)
       $edges = layoutGraph.edges
-      fitView()
-      window.requestAnimationFrame(() => fitView())
+      refreshGraph(false)
     })
     .catch(console.error)
 }
@@ -286,7 +294,7 @@ $: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
           required
           bind:inputValue
           bind:touchedInput
-          onSelectedChange={({ value })=> $activeGraph = value}
+          onSelectedChange={({ value })=> {$activeGraph = value; refreshGraph()}}
         >
           <div class="relative">
             <Waypoints class="absolute start-3 top-1/2 size-6 -translate-y-1/2 text-muted-foreground" />
