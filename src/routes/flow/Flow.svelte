@@ -241,9 +241,7 @@ $: {
     inputValue && touchedInput ? graphNames.filter(name => name.toLowerCase().includes(inputValue)) : graphNames
 }
 
-onMount(() => {
-  if (!Object.hasOwn($nodes[0], "position")) positionNodes()
-})
+$: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 </script>
 
 <main class="h-full relative">
