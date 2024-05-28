@@ -34,9 +34,10 @@ import { mode } from "mode-watcher"
 
 import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
+import * as Combobox from "$lib/components/ui/combobox"
 import * as Table from "$lib/components/ui/table"
-import { detailsOpen, edges, nodes, orientation, selectedNodes } from "$lib/database"
-import { Move, MoveHorizontal, MoveVertical, ScatterChart, X } from "lucide-svelte"
+import { activeGraph, detailsOpen, edges, graphs, nodes, orientation, selectedNodes } from "$lib/stores"
+import { Check, Move, MoveHorizontal, MoveVertical, ScatterChart, Search, Waypoints, X } from "lucide-svelte"
 import MaterialNode from "./MaterialNode.svelte"
 import StepNode from "./StepNode.svelte"
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
@@ -49,6 +50,15 @@ import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
 
 // import DataNode from "./DataNode.svelte";
+
+function refreshGraph(assign = true) {
+  if (assign) {
+    $nodes = $nodes
+    $edges = $edges
+  }
+  fitView()
+  window.requestAnimationFrame(() => fitView())
+}
 
 $: colorMode = $mode
 
@@ -225,15 +235,21 @@ function positionNodes() {
       })
       $nodes = layoutGroupNodes.concat(layoutMainNodes)
       $edges = layoutGraph.edges
-      fitView()
-      window.requestAnimationFrame(() => fitView())
+      refreshGraph(false)
     })
     .catch(console.error)
 }
 
-onMount(() => {
-  if (!Object.hasOwn($nodes[0], "position")) positionNodes()
-})
+let inputValue = ""
+let touchedInput = false
+let filteredGraphNames: string[]
+$: {
+  const graphNames = Object.keys($graphs)
+  filteredGraphNames =
+    inputValue && touchedInput ? graphNames.filter(name => name.toLowerCase().includes(inputValue)) : graphNames
+}
+
+$: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
 </script>
 
 <main class="h-full relative">
@@ -271,6 +287,47 @@ onMount(() => {
         <Badge on:dragstart={event => onDragStart(event, "material")} draggable>Material</Badge>
         <Badge on:dragstart={event => onDragStart(event, "step")} draggable>Step</Badge>
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
+      </Panel>
+      <Panel position="top-center">
+        <Combobox.Root
+          items={filteredGraphNames}
+          required
+          bind:inputValue
+          bind:touchedInput
+          onSelectedChange={({ value })=> {$activeGraph = value; refreshGraph()}}
+        >
+          <div class="relative">
+            <Waypoints class="absolute start-3 top-1/2 size-6 -translate-y-1/2 text-muted-foreground" />
+            <Combobox.Input
+              class="inline-flex h-input w-[296px] py-2 truncate rounded-xl border border-border-input bg-background px-11 text-sm transition-colors placeholder:text-foreground-alt/50 focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:ring-offset-background"
+              placeholder="Select a graph"
+              aria-label="Select a graph"
+              value={inputValue}
+            />
+            <Search class="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+
+          <Combobox.Content
+            class="w-full rounded-xl border border-muted bg-background px-1 py-3 shadow-popover outline-none"
+            sideOffset={8}
+          >
+            {#each filteredGraphNames as name}
+              <Combobox.Item
+                class="flex h-10 w-full select-none items-center rounded-xl rounded-button py-3 pl-5 pr-1.5 text-sm capitalize outline-none transition-all duration-75 data-[highlighted]:bg-muted"
+                value={name}
+                label={name}
+              >
+                {name}
+                <Combobox.ItemIndicator class="ml-auto" asChild={false}><Check /></Combobox.ItemIndicator>
+              </Combobox.Item>
+            {:else}
+              <span class="block px-5 py-2 text-sm text-muted-foreground">
+                No graphs found
+              </span>
+            {/each}
+          </Combobox.Content>
+          <Combobox.HiddenInput name="selectedGraph" />
+        </Combobox.Root>
       </Panel>
       <Controls position="bottom-right"/>
       <Background />

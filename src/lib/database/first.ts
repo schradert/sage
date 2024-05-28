@@ -1,9 +1,7 @@
 import { type Edge, type Node } from "@xyflow/svelte"
-// TODO convert to persisted
-import { persisted } from "svelte-persisted-store"
-import { derived } from "svelte/store"
+import { Graph } from "$lib/types"
 
-const _nodes: Node[] = [
+const nodes: Node[] = [
     //  {
     //   id: "skillet",
     //     type: "group",
@@ -222,7 +220,7 @@ const _nodes: Node[] = [
 ]
 
 const edgeType = "smoothstep"
-const _edges: Edge[] = [
+const edges: Edge[] = [
   { id: "1", source: "olive-oil", target: "heat", type: edgeType, animated: true, data: { quantity: { amount: 1, unit: "tbsp" } } },
   { id: "2", source: "ground-beef", target: "brown", type: edgeType, animated: true, data: { quantity: { amount: 1, unit: "lb" } } },
   { id: "3", source: "heat", target: "hot-oil", type: edgeType, animated: true },
@@ -254,9 +252,4 @@ const _edges: Edge[] = [
   { id: "29", source: "plate", target: "taco", type: edgeType, animated: true },
 ]
 
-export const nodes = persisted("nodes", _nodes)
-export const selectedNodes = derived(nodes, $nodes => $nodes.filter(n => n.selected))
-export const edges = persisted("edges", _edges)
-export const orientation = persisted("orientation", <"vertical" | "horizontal"> "horizontal")
-export const detailsOpen = persisted("detailsOpen", <boolean> false)
-export const menuOpen = persisted("menuOpen", <boolean> false)
+export const graph = new Graph({ nodes, edges, name: "First" })
