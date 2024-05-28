@@ -4,7 +4,6 @@ import {
   ConnectionLineType,
   Controls,
   type IsValidConnection,
-  // type Edge,
   MiniMap,
   type Node,
   type NodeTypes,
@@ -13,7 +12,6 @@ import {
   Panel,
   Position,
   SvelteFlow,
-  useStore,
   useSvelteFlow,
 } from "@xyflow/svelte"
 import {
@@ -28,6 +26,7 @@ import {
   createRender,
   createTable,
 } from "svelte-headless-table"
+import { addSortBy } from "svelte-headless-table/plugins"
 import { v4 as uuidv4 } from "uuid"
 import "@xyflow/svelte/dist/style.css"
 import { mode } from "mode-watcher"
@@ -45,11 +44,9 @@ import { capitalize } from "$lib/utils"
 import ELK from "elkjs/lib/elk.bundled.js"
 import { flatten } from "flat"
 import * as R from "remeda"
-import { onMount } from "svelte"
+import { derived } from "svelte/store"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
-
-// import DataNode from "./DataNode.svelte";
 
 function refreshGraph(assign = true) {
   if (assign) {
@@ -62,18 +59,21 @@ function refreshGraph(assign = true) {
 
 $: colorMode = $mode
 
-const table = createTable(selectedNodes)
+const nodesInTable = derived([nodes, selectedNodes], ([$nodes, $selectedNodes]) =>
+  $selectedNodes.length > 0 ? $selectedNodes : $nodes,
+)
+const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: "data.label", order: "asc" }] }) })
 let headerRows: HeaderRow<Node>[]
 let pageRows: DataBodyRow<Node>[]
 let tableAttrs: TableAttributes<Node>
 let tableBodyAttrs: TableBodyAttributes<Node>
 $: {
-  const monsterNode = R.reduce($selectedNodes, R.mergeDeep, {})
+  const monsterNode = R.reduce($nodesInTable, R.mergeDeep, {})
   const schema = R.mapValues(flatten(monsterNode), R.type)
   const onUpdateValue = (rowDataId: string, columnId: string, newValue: unknown) => {
     const schemaType = schema[columnId]
     const newValueParsed = schemaType === "[object Number]" && newValue ? Number(newValue) : newValue
-    const node = $selectedNodes[Number(rowDataId)]
+    const node = $nodesInTable[Number(rowDataId)]
     $nodes[$nodes.indexOf(node)] = R.setPath(node, R.stringToPath(columnId), newValueParsed)
     $nodes = $nodes
   }
@@ -91,7 +91,8 @@ $: {
             header: capitalize(key),
             cell: EditableCellLabel,
             id: path.join("."),
-            accessor: item => R.pathOr(item, path, undefined),
+            accessor: item => R.pathOr(item, path, "-"),
+            plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
           })
     })
   const columns = table.createColumns(generateColumns(monsterNode ?? {}))
