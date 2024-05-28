@@ -4,7 +4,6 @@ import {
   ConnectionLineType,
   Controls,
   type IsValidConnection,
-  // type Edge,
   MiniMap,
   type Node,
   type NodeTypes,
@@ -13,7 +12,6 @@ import {
   Panel,
   Position,
   SvelteFlow,
-  useStore,
   useSvelteFlow,
 } from "@xyflow/svelte"
 import {
@@ -46,12 +44,9 @@ import { capitalize } from "$lib/utils"
 import ELK from "elkjs/lib/elk.bundled.js"
 import { flatten } from "flat"
 import * as R from "remeda"
-import { onMount } from "svelte"
 import { derived } from "svelte/store"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
-
-// import DataNode from "./DataNode.svelte";
 
 function refreshGraph(assign = true) {
   if (assign) {
