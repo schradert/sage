@@ -47,6 +47,7 @@ import * as R from "remeda"
 import { derived } from "svelte/store"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
+  import TextEditorModalCell from "./TextEditorModalCell.svelte";
 
 function refreshGraph(assign = true) {
   if (assign) {
@@ -79,6 +80,11 @@ $: {
   }
   const EditableCellLabel: DataLabel<unknown> = ({ column, row, value }) =>
     createRender(EditableCell, { row, column, value, onUpdateValue })
+
+  const specialCellsByColumnId: { [_: string]: DataLabel<unknown> | undefined } = {
+    'data.description': ({ column, row, value }) => createRender(TextEditorModalCell, { row, column, value, onUpdateValue }),
+  };
+
   const generateColumns = (obj, roots: string[] = []): Column<Node>[] =>
     Object.entries(obj).map(([key, value]) => {
       const path = roots.concat([key])
@@ -89,7 +95,7 @@ $: {
           })
         : table.column({
             header: capitalize(key),
-            cell: EditableCellLabel,
+            cell: specialCellsByColumnId[path.join(".")] ?? EditableCellLabel,
             id: path.join("."),
             accessor: item => R.pathOr(item, path, "-"),
             plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
