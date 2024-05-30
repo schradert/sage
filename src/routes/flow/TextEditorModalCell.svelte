@@ -1,8 +1,7 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import type { JSONContent } from "@tiptap/core";
 
-
-  import { buttonVariants } from "$lib/components/ui/button";
+import { buttonVariants } from "$lib/components/ui/button";
 
 
 import * as Dialog from "$lib/components/ui/dialog";
@@ -14,29 +13,25 @@ type Item = $$Generic
 
 export let row: BodyRow<Item>
 export let column: DataColumn<Item>
-export let value: unknown
-export let onUpdateValue: (rowDataId: string, columnId: string, newValue: unknown) => void
+export let content: JSONContent | null
+export let onUpdateContent: (rowDataId: string, columnId: string, newValue: unknown) => void
 
-
-onMount(() => {
-console.log(row.cellForId);
-});
-
-const save = () => {
+const save = (content: JSONContent) => {
   if (row.isData()) {
-    onUpdateValue(row.dataId, column.id, value)
+    onUpdateContent(row.dataId, column.id, content)
   }
+  content = content;
 }
 
 </script>
 
 <Dialog.Root>
-  <Dialog.Trigger class={buttonVariants({ variant: "outline" })}>Notes</Dialog.Trigger>
+  <Dialog.Trigger class={buttonVariants({ variant: "outline" })}>Edit</Dialog.Trigger>
   <Dialog.Content class="md:w-full md:max-w-65ch">
     <Dialog.Header>
       <div class="w-full">
 
-        <TextEditor />
+        <TextEditor on:update={e => save(e.detail)} initialContent={content} />
       </div>
     </Dialog.Header>
   </Dialog.Content>

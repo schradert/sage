@@ -47,7 +47,8 @@ import * as R from "remeda"
 import { derived } from "svelte/store"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
-  import TextEditorModalCell from "./TextEditorModalCell.svelte";
+import TextEditorModalCell from "./TextEditorModalCell.svelte";
+import StaticCell from "./StaticCell.svelte";
 
 function refreshGraph(assign = true) {
   if (assign) {
@@ -81,28 +82,35 @@ $: {
   const EditableCellLabel: DataLabel<unknown> = ({ column, row, value }) =>
     createRender(EditableCell, { row, column, value, onUpdateValue })
 
-  const specialCellsByColumnId: { [_: string]: DataLabel<unknown> | undefined } = {
-    'data.description': ({ column, row, value }) => createRender(TextEditorModalCell, { row, column, value, onUpdateValue }),
+  const specialCellsByColumnId: Record<string, DataLabel<unknown> | undefined> = {
+    'data.description': ({ column, row, value: { content } }) => createRender(TextEditorModalCell, { row, column, content, onUpdateContent: (r, c, newContent) => onUpdateValue(r, c, { content: newContent }) }),
   };
 
   const generateColumns = (obj, roots: string[] = []): Column<Node>[] =>
     Object.entries(obj).map(([key, value]) => {
       const path = roots.concat([key])
+      const id = path.join(".");
+      const specialCell = specialCellsByColumnId[id];
+      
+      const makeColumn = (cell: any) => table.column({
+        header: capitalize(key),
+        cell: ({ value, ...rest }) => value === undefined ? createRender(StaticCell, { value: '-' }) : cell({ value, ...rest }),
+        id,
+        accessor: item => R.pathOr(item, path, undefined),
+        plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
+      });
+      if (specialCell) {
+        return makeColumn(specialCell);
+      }
       return Object.prototype.toString.call(value) === "[object Object]"
         ? table.group({
             header: capitalize(key),
             columns: generateColumns(value, path),
           })
-        : table.column({
-            header: capitalize(key),
-            cell: specialCellsByColumnId[path.join(".")] ?? EditableCellLabel,
-            id: path.join("."),
-            accessor: item => R.pathOr(item, path, "-"),
-            plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
-          })
-    })
-  const columns = table.createColumns(generateColumns(monsterNode ?? {}))
-  ;({ headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns))
+        : makeColumn(EditableCellLabel);
+    });
+  const columns = table.createColumns(generateColumns(monsterNode ?? {}));
+  ({ headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns))
 }
 
 let connectingNodeId: string | null
