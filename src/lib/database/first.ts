@@ -1,5 +1,6 @@
 import { type Edge, type Node } from "@xyflow/svelte"
-import { Graph } from "$lib/types"
+import * as R from "remeda"
+import { Graph, type Orientation } from "$lib/types"
 
 const nodes: Node[] = [
     //  {
@@ -300,4 +301,10 @@ const edges: Edge[] = [
   { id: "29", source: "plate", target: "taco", type: edgeType, animated: true },
 ]
 
-export const graph = new Graph({ nodes, edges, name: "First" })
+const name = "First"
+const orientation: Orientation = "vertical"
+export const graph = new Graph({
+    name,
+    nodes: nodes.map(R.mergeDeep({ data: { graph: { name, orientation } } })),
+    edges: edges.map(R.mergeDeep({ data: { graph: { name } } })),
+})
