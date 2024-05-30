@@ -40,13 +40,20 @@ export class Graph extends NamedMixin(Unique) {
     public nodes: Node[]
     public edges: Edge[]
     public orientation: Orientation
+    public selected: boolean
     constructor (...args: any[]) {
         // TODO why do I have to be explicit here?
         super(...args as [Named])
-        const { nodes, edges, orientation } = args[0] as { nodes: Node[]; edges: Edge[]; orientation: Orientation }
+        const { nodes, edges, orientation, selected } = args[0] as {
+            nodes: Node[];
+            edges: Edge[];
+            orientation: Orientation;
+            selected: boolean;
+        }
         this.nodes = nodes ?? []
         this.edges = edges ?? []
         this.orientation = orientation ?? "vertical"
+        this.selected = selected ?? false
     }
 }
 

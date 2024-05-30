@@ -35,8 +35,8 @@ import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
 import * as Combobox from "$lib/components/ui/combobox"
 import * as Table from "$lib/components/ui/table"
-import { activeGraph, detailsOpen, edges, graphs, nodes, orientation, selectedNodes } from "$lib/stores"
-import { Check, Move, MoveHorizontal, MoveVertical, ScatterChart, Search, Waypoints, X } from "lucide-svelte"
+import { detailsOpen, edges, graphs, nodes, selectedGraphs, selectedNodes } from "$lib/stores"
+import { Check, Move, RotateCw, ScatterChart, Search, Waypoints, X } from "lucide-svelte"
 import MaterialNode from "./MaterialNode.svelte"
 import StepNode from "./StepNode.svelte"
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
@@ -44,11 +44,12 @@ import { capitalize } from "$lib/utils"
 import ELK from "elkjs/lib/elk.bundled.js"
 import { flatten } from "flat"
 import * as R from "remeda"
+import { onMount } from "svelte"
 import { derived } from "svelte/store"
 import { slide } from "svelte/transition"
 import EditableCell from "./EditableCell.svelte"
 
-function refreshGraph(assign = true) {
+function refreshGraphs(assign = true) {
   if (assign) {
     $nodes = $nodes
     $edges = $edges
@@ -62,7 +63,12 @@ $: colorMode = $mode
 const nodesInTable = derived([nodes, selectedNodes], ([$nodes, $selectedNodes]) =>
   $selectedNodes.length > 0 ? $selectedNodes : $nodes,
 )
-const table = createTable(nodesInTable, { sort: addSortBy({ initialSortKeys: [{ id: "data.label", order: "asc" }] }) })
+const table = createTable(
+  nodesInTable,
+  Object.keys($selectedGraphs).length > 0
+    ? { sort: addSortBy({ initialSortKeys: [{ id: "data.label", order: "asc" }] }) }
+    : {},
+)
 let headerRows: HeaderRow<Node>[]
 let pageRows: DataBodyRow<Node>[]
 let tableAttrs: TableAttributes<Node>
@@ -127,10 +133,7 @@ const onconnectend: OnConnectEnd = event => {
 }
 function onNodeDrag({ detail: { targetNode } }) {
   const intersections = getIntersectingNodes(targetNode).map(node => node.id)
-  $nodes.forEach(node => {
-    node.class = intersections.includes(node.id) ? "highlight" : ""
-  })
-  $nodes = $nodes
+  $nodes = $nodes.map((node: Node) => R.set(node, "class", intersections.includes(node.id) ? "highlight" : ""))
 }
 
 function onDragOver(event: DragEvent) {
@@ -141,14 +144,20 @@ function onDragOver(event: DragEvent) {
 function onDrop(event: DragEvent) {
   event.preventDefault()
   if (!event.dataTransfer) return null
+  // TODO need a different way to select graph by default than first
+  const graph = R.pipe($selectedGraphs, R.values, R.first)
+  const { name, orientation } = graph
   const newNode: Node = {
     id: uuidv4(),
     type: event.dataTransfer.getData("application/svelteflow"),
     position: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-    data: { label: "Another node" },
+    data: {
+      label: "Another node",
+      graph: { name, orientation },
+    },
     origin: [0.5, 0.0],
-    sourcePosition: $orientation === "horizontal" ? Position.Right : Position.Bottom,
-    targetPosition: $orientation === "horizontal" ? Position.Left : Position.Top,
+    sourcePosition: orientation === "horizontal" ? Position.Right : Position.Bottom,
+    targetPosition: orientation === "horizontal" ? Position.Left : Position.Top,
   }
   $nodes.push(newNode)
   $nodes = $nodes
@@ -163,7 +172,6 @@ const isValidConnection: IsValidConnection = connection => {
 const nodeTypes: NodeTypes = {
   material: MaterialNode,
   step: StepNode,
-  // data: DataNode,
 }
 
 const connectionLineType = ConnectionLineType.SmoothStep
@@ -180,7 +188,9 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
 function positionNodes() {
   const groupNodes = $nodes.filter(node => node.type === "group")
   const mainNodes = $nodes.filter(node => node.type !== "group")
-  const isHorizontal = $orientation === "horizontal"
+  const isHorizontal = true
+  // TODO find a proper way to decide the positioning
+  // const isHorizontal = $orientation === "horizontal"
   const elk = new ELK()
   const graph = {
     id: "root",
@@ -236,21 +246,26 @@ function positionNodes() {
       })
       $nodes = layoutGroupNodes.concat(layoutMainNodes)
       $edges = layoutGraph.edges
-      refreshGraph(false)
+      refreshGraphs(false)
     })
     .catch(console.error)
 }
 
 let inputValue = ""
 let touchedInput = false
-let filteredGraphNames: string[]
-$: {
-  const graphNames = Object.keys($graphs)
-  filteredGraphNames =
-    inputValue && touchedInput ? graphNames.filter(name => name.toLowerCase().includes(inputValue)) : graphNames
-}
+$: filteredGraphs =
+  inputValue && touchedInput
+    ? R.pickBy($selectedGraphs, ({ name }) => name.toLowerCase().includes(inputValue))
+    : $graphs
 
-$: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
+// Temporarily assign
+onMount(() => {
+  $selectedGraphs = $graphs
+  positionNodes()
+  $selectedGraphs = {}
+  refreshGraphs()
+})
+// $: if ($nodes.length > 0 && !Object.hasOwn($nodes[0], "position")) positionNodes()
 </script>
 
 <main class="h-full relative">
@@ -273,12 +288,11 @@ $: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
         <Button
           size="icon"
           on:click={() => {
-            $orientation = $orientation === 'horizontal' ? 'vertical' : 'horizontal'
+            $selectedGraphs = R.mapValues($selectedGraphs, graph => R.set(graph, "orientation", graph.orientation === "horizontal" ? "vertical" : "horizontal"))
             positionNodes()
           }}
         >
-          <MoveHorizontal class="h-[1.2rem] w-[1.2rem] transition-all {$orientation === "vertical" ? "scale-100" : "scale-0"}" />
-          <MoveVertical class="absolute h-[1.2rem] w-[1.2rem] transition-all {$orientation === "horizontal" ? "scale-100" : "scale-0"}" />
+          <RotateCw class="h-[1.2rem] w-[1.2rem]" />
           <span class="sr-only">Toggle layout orientation</span>
         </Button>
         <Button size="icon" on:click={positionNodes}>
@@ -290,12 +304,17 @@ $: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
       </Panel>
       <Panel position="top-center">
+        <!-- bind:selected={$selectedGraphs} -->
         <Combobox.Root
-          items={filteredGraphNames}
+          items={$selectedGraphs}
           required
+          multiple
           bind:inputValue
           bind:touchedInput
-          onSelectedChange={({ value })=> {$activeGraph = value; refreshGraph()}}
+          onSelectedChange={results => {
+            $selectedGraphs = R.mapToObj(results, ({ value: graph }) => [graph.name, graph])
+            refreshGraphs()
+          }}
         >
           <div class="relative">
             <Waypoints class="absolute start-3 top-1/2 size-6 -translate-y-1/2 text-muted-foreground" />
@@ -312,13 +331,13 @@ $: if (!Object.hasOwn($nodes[0], "position")) positionNodes()
             class="w-full rounded-xl border border-muted bg-background px-1 py-3 shadow-popover outline-none"
             sideOffset={8}
           >
-            {#each filteredGraphNames as name}
+            {#each R.values(filteredGraphs) as graph}
               <Combobox.Item
                 class="flex h-10 w-full select-none items-center rounded-xl rounded-button py-3 pl-5 pr-1.5 text-sm capitalize outline-none transition-all duration-75 data-[highlighted]:bg-muted"
-                value={name}
-                label={name}
+                value={graph}
+                label={graph.name}
               >
-                {name}
+                {graph.name}
                 <Combobox.ItemIndicator class="ml-auto" asChild={false}><Check /></Combobox.ItemIndicator>
               </Combobox.Item>
             {:else}
