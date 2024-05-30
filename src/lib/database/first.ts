@@ -14,6 +14,9 @@ const nodes: Node[] = [
     data: {
         label: "Ground Beef",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -22,6 +25,9 @@ const nodes: Node[] = [
     data: {
         label: "Chili Powder",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -30,6 +36,9 @@ const nodes: Node[] = [
     data: {
         label: "Cumin",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -38,6 +47,9 @@ const nodes: Node[] = [
     data: {
         label: "Oregano",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -46,6 +58,9 @@ const nodes: Node[] = [
     data: {
         label: "Garlic Powder",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -54,6 +69,9 @@ const nodes: Node[] = [
     data: {
         label: "Salt",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -62,6 +80,9 @@ const nodes: Node[] = [
     data: {
         label: "Black Pepper",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -70,6 +91,9 @@ const nodes: Node[] = [
     data: {
         label: "Tomato Paste",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -78,6 +102,9 @@ const nodes: Node[] = [
     data: {
         label: "Water",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -86,6 +113,9 @@ const nodes: Node[] = [
     data: {
         label: "Olive Oil",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -94,6 +124,9 @@ const nodes: Node[] = [
     data: {
         label: "Flour Tortillas",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -102,6 +135,9 @@ const nodes: Node[] = [
     data: {
         label: "Lettuce",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -110,6 +146,9 @@ const nodes: Node[] = [
     data: {
         label: "Shredded Cheese",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -126,6 +165,9 @@ const nodes: Node[] = [
     data: {
         label: "Red Onion",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -134,6 +176,9 @@ const nodes: Node[] = [
     data: {
         label: "Sour Cream",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
@@ -142,6 +187,9 @@ const nodes: Node[] = [
     data: {
         label: "Guacamole",
         quantity: { amount: 10, unit: "lb" },
+        description: {
+          content: null,
+        },
     },
   },
   {
