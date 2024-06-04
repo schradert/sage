@@ -1,13 +1,10 @@
 <script lang="ts">
-import type { JSONContent } from "@tiptap/core";
-
-import { buttonVariants } from "$lib/components/ui/button";
-
-
-import * as Dialog from "$lib/components/ui/dialog";
+import type { JSONContent } from "@tiptap/core"
 import { BodyRow, DataColumn } from "svelte-headless-table"
 
-import TextEditor from "./TextEditor.svelte";
+import TextEditor from "$lib/components/TextEditor.svelte"
+import { buttonVariants } from "$lib/components/ui/button"
+import * as Dialog from "$lib/components/ui/dialog"
 
 type Item = $$Generic
 
@@ -16,13 +13,12 @@ export let column: DataColumn<Item>
 export let content: JSONContent | null
 export let onUpdateContent: (rowDataId: string, columnId: string, newValue: unknown) => void
 
-const save = (content: JSONContent) => {
+function save(content: JSONContent) {
   if (row.isData()) {
     onUpdateContent(row.dataId, column.id, content)
   }
-  content = content;
+  content = content
 }
-
 </script>
 
 <Dialog.Root>
@@ -30,13 +26,8 @@ const save = (content: JSONContent) => {
   <Dialog.Content class="md:w-full md:max-w-65ch">
     <Dialog.Header>
       <div class="w-full">
-
         <TextEditor on:update={e => save(e.detail)} initialContent={content} />
       </div>
     </Dialog.Header>
   </Dialog.Content>
 </Dialog.Root>
-
-<style lang="postcss">
-
-</style>

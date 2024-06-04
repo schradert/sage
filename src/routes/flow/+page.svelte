@@ -1,5 +1,8 @@
 <script lang="ts">
-import App from "./App.svelte"
+import { SvelteFlowProvider } from "@xyflow/svelte"
+import Flow from "./Flow.svelte"
 </script>
 
-<App />
+<SvelteFlowProvider>
+  <Flow />
+</SvelteFlowProvider>

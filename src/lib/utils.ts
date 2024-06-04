@@ -16,6 +16,11 @@ type FlyAndScaleParams = {
 
 export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 
+// Copied from Remeda which has now removed this from v2
+export function typeOf(val: unknown): string {
+  return val === null ? "Null" : val === undefined ? "Undefined" : Object.prototype.toString.call(val).slice(8, -1)
+}
+
 export const flyAndScale = (
   node: Element,
   params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 },

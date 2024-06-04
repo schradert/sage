@@ -14,42 +14,25 @@ import {
   SvelteFlow,
   useSvelteFlow,
 } from "@xyflow/svelte"
-import {
-  type Column,
-  type DataBodyRow,
-  type DataLabel,
-  type HeaderRow,
-  Render,
-  Subscribe,
-  type TableAttributes,
-  type TableBodyAttributes,
-  createRender,
-  createTable,
-} from "svelte-headless-table"
-import { addSortBy } from "svelte-headless-table/plugins"
-import { v4 as uuidv4 } from "uuid"
 import "@xyflow/svelte/dist/style.css"
+import { Move, RotateCw, ScatterChart, X } from "lucide-svelte"
 import { mode } from "mode-watcher"
+import * as R from "remeda"
+import { slide } from "svelte/transition"
+import { v4 as uuidv4 } from "uuid"
 
+import Table from "$lib/components/data/table"
 import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
-import * as Combobox from "$lib/components/ui/combobox"
-import * as Table from "$lib/components/ui/table"
-import { detailsOpen, edges, graphs, nodes, selectedGraphs, selectedNodes } from "$lib/stores"
-import { Check, Move, RotateCw, ScatterChart, Search, Waypoints, X } from "lucide-svelte"
+import { positionNodes } from "$lib/layout"
+import { detailsOpen, edges, nodes, selectedGraphs } from "$lib/stores"
+import { capitalize } from "$lib/utils"
+
+import GraphSelector from "./GraphSelector.svelte"
 import MaterialNode from "./MaterialNode.svelte"
 import StepNode from "./StepNode.svelte"
+
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
-import { capitalize } from "$lib/utils"
-import ELK from "elkjs/lib/elk.bundled.js"
-import { flatten } from "flat"
-import * as R from "remeda"
-import { onMount } from "svelte"
-import { derived } from "svelte/store"
-import { slide } from "svelte/transition"
-import EditableCell from "./EditableCell.svelte"
-import StaticCell from "./StaticCell.svelte"
-import TextEditorModalCell from "./TextEditorModalCell.svelte"
 
 function refreshGraphs(assign = true) {
   if (assign) {
@@ -60,72 +43,8 @@ function refreshGraphs(assign = true) {
   window.requestAnimationFrame(() => fitView())
 }
 
+$: console.log($nodes)
 $: colorMode = $mode
-
-const nodesInTable = derived([nodes, selectedNodes], ([$nodes, $selectedNodes]) =>
-  $selectedNodes.length > 0 ? $selectedNodes : $nodes,
-)
-const table = createTable(
-  nodesInTable,
-  Object.keys($selectedGraphs).length > 0
-    ? { sort: addSortBy({ initialSortKeys: [{ id: "data.label", order: "asc" }] }) }
-    : {},
-)
-let headerRows: HeaderRow<Node>[]
-let pageRows: DataBodyRow<Node>[]
-let tableAttrs: TableAttributes<Node>
-let tableBodyAttrs: TableBodyAttributes<Node>
-$: {
-  const monsterNode = R.reduce($nodesInTable, R.mergeDeep, {})
-  const schema = R.mapValues(flatten(monsterNode), R.type)
-  const onUpdateValue = (rowDataId: string, columnId: string, newValue: unknown) => {
-    const schemaType = schema[columnId]
-    const newValueParsed = schemaType === "[object Number]" && newValue ? Number(newValue) : newValue
-    const node = $nodesInTable[Number(rowDataId)]
-    $nodes[$nodes.indexOf(node)] = R.setPath(node, R.stringToPath(columnId), newValueParsed)
-    $nodes = $nodes
-  }
-  const EditableCellLabel: DataLabel<unknown> = ({ column, row, value }) =>
-    createRender(EditableCell, { row, column, value, onUpdateValue })
-
-  const specialCellsByColumnId: Record<string, DataLabel<unknown> | undefined> = {
-    "data.description": ({ column, row, value: { content } }) =>
-      createRender(TextEditorModalCell, {
-        row,
-        column,
-        content,
-        onUpdateContent: (r, c, newContent) => onUpdateValue(r, c, { content: newContent }),
-      }),
-  }
-
-  const generateColumns = (obj, roots: string[] = []): Column<Node>[] =>
-    Object.entries(obj).map(([key, value]) => {
-      const path = roots.concat([key])
-      const id = path.join(".")
-      const specialCell = specialCellsByColumnId[id]
-
-      const makeColumn = (cell: DataLabel<unknown>) =>
-        table.column({
-          header: capitalize(key),
-          cell: ({ value, ...rest }) =>
-            value === undefined ? createRender(StaticCell, { value: "-" }) : cell({ value, ...rest }),
-          id,
-          accessor: item => R.pathOr(item, path, undefined),
-          plugins: { sort: { getSortValue: value => (typeof value === "string" ? value.toLowerCase() : value) } },
-        })
-      if (specialCell) {
-        return makeColumn(specialCell)
-      }
-      return Object.prototype.toString.call(value) === "[object Object]"
-        ? table.group({
-            header: capitalize(key),
-            columns: generateColumns(value, path),
-          })
-        : makeColumn(EditableCellLabel)
-    })
-  const columns = table.createColumns(generateColumns(monsterNode ?? {}))
-  ;({ headerRows, pageRows, tableAttrs, tableBodyAttrs } = table.createViewModel(columns))
-}
 
 let connectingNodeId: string | null
 const onconnectend: OnConnectEnd = event => {
@@ -206,88 +125,6 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
   event.dataTransfer.setData("application/svelteflow", nodeType)
   event.dataTransfer.effectAllowed = "move"
 }
-
-function positionNodes() {
-  const groupNodes = $nodes.filter(node => node.type === "group")
-  const mainNodes = $nodes.filter(node => node.type !== "group")
-  const isHorizontal = true
-  // TODO find a proper way to decide the positioning
-  // const isHorizontal = $orientation === "horizontal"
-  const elk = new ELK()
-  const graph = {
-    id: "root",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "40",
-      "elk.spacing.nodeNode": "40",
-      "elk.direction": isHorizontal ? "RIGHT" : "DOWN",
-    },
-    edges: $edges,
-    children: mainNodes.map(node => ({
-      ...node,
-      targetPosition: isHorizontal ? Position.Left : Position.Top,
-      sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
-      // Hardcode a width and height for elk to use when layouting
-      width: 100,
-      height: 50,
-      position: { x: 0, y: 0 },
-    })),
-  }
-
-  elk
-    .layout(graph)
-    .then(layoutGraph => {
-      const layoutMainNodes = layoutGraph.children.map(node => ({
-        ...node,
-        // Nest x, y under position as xyflow expects it
-        position: { x: node.x, y: node.y },
-      }))
-      const layoutGroupNodes = groupNodes.map(node => {
-        const children = layoutMainNodes.filter(n => n.parentId === node.id)
-        const rect = children.reduce(
-          (values, child) => ({
-            minX: Math.min(values.minX, child.position.x),
-            maxX: Math.max(values.maxX, child.position.x),
-            minY: Math.min(values.minY, child.position.y),
-            maxY: Math.max(values.maxY, child.position.y),
-          }),
-          {
-            minX: Number.POSITIVE_INFINITY,
-            maxX: Number.NEGATIVE_INFINITY,
-            minY: Number.POSITIVE_INFINITY,
-            maxY: Number.NEGATIVE_INFINITY,
-          },
-        )
-        const margin = 5
-        return {
-          ...node,
-          position: { x: rect.minX - margin, y: rect.minY - margin },
-          width: rect.maxX - rect.minX + 2 * margin,
-          height: rect.maxY - rect.minY + 2 * margin,
-        }
-      })
-      $nodes = layoutGroupNodes.concat(layoutMainNodes)
-      $edges = layoutGraph.edges
-      refreshGraphs(false)
-    })
-    .catch(console.error)
-}
-
-let inputValue = ""
-let touchedInput = false
-$: filteredGraphs =
-  inputValue && touchedInput
-    ? R.pickBy($selectedGraphs, ({ name }) => name.toLowerCase().includes(inputValue))
-    : $graphs
-
-// Temporarily assign
-onMount(() => {
-  $selectedGraphs = $graphs
-  positionNodes()
-  $selectedGraphs = {}
-  refreshGraphs()
-})
-// $: if ($nodes.length > 0 && !Object.hasOwn($nodes[0], "position")) positionNodes()
 </script>
 
 <main class="h-full relative">
@@ -311,7 +148,10 @@ onMount(() => {
           size="icon"
           on:click={() => {
             $selectedGraphs = R.mapValues($selectedGraphs, graph => R.set(graph, "orientation", graph.orientation === "horizontal" ? "vertical" : "horizontal"))
-            positionNodes()
+            positionNodes($nodes, $edges).then(({ nodes: newNodes, edges: newEdges }) => {
+              $nodes = newNodes
+              $edges = newEdges
+            })
           }}
         >
           <RotateCw class="h-[1.2rem] w-[1.2rem]" />
@@ -321,95 +161,26 @@ onMount(() => {
           <Move class="rotate-45" />
           <span class="sr-only">Automatically place nodes</span>
         </Button>
-        <Badge on:dragstart={event => onDragStart(event, "material")} draggable>Material</Badge>
-        <Badge on:dragstart={event => onDragStart(event, "step")} draggable>Step</Badge>
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
       </Panel>
       <Panel position="top-center">
-        <!-- bind:selected={$selectedGraphs} -->
-        <Combobox.Root
-          items={$selectedGraphs}
-          required
-          multiple
-          bind:inputValue
-          bind:touchedInput
-          onSelectedChange={results => {
-            $selectedGraphs = R.mapToObj(results, ({ value: graph }) => [graph.name, graph])
-            refreshGraphs()
-          }}
-        >
-          <div class="relative">
-            <Waypoints class="absolute start-3 top-1/2 size-6 -translate-y-1/2 text-muted-foreground" />
-            <Combobox.Input
-              class="inline-flex h-input w-[296px] py-2 truncate rounded-xl border border-border-input bg-background px-11 text-sm transition-colors placeholder:text-foreground-alt/50 focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:ring-offset-background"
-              placeholder="Select a graph"
-              aria-label="Select a graph"
-              value={inputValue}
-            />
-            <Search class="absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          </div>
-
-          <Combobox.Content
-            class="w-full rounded-xl border border-muted bg-background px-1 py-3 shadow-popover outline-none"
-            sideOffset={8}
-          >
-            {#each R.values(filteredGraphs) as graph}
-              <Combobox.Item
-                class="flex h-10 w-full select-none items-center rounded-xl rounded-button py-3 pl-5 pr-1.5 text-sm capitalize outline-none transition-all duration-75 data-[highlighted]:bg-muted"
-                value={graph}
-                label={graph.name}
-              >
-                {graph.name}
-                <Combobox.ItemIndicator class="ml-auto" asChild={false}><Check /></Combobox.ItemIndicator>
-              </Combobox.Item>
-            {:else}
-              <span class="block px-5 py-2 text-sm text-muted-foreground">
-                No graphs found
-              </span>
-            {/each}
-          </Combobox.Content>
-          <Combobox.HiddenInput name="selectedGraph" />
-        </Combobox.Root>
+        <GraphSelector />
       </Panel>
-      <Controls position="bottom-right"/>
-      <Background />
       <MiniMap position="bottom-left" />
+      <Panel position="bottom-center">
+        <div class="flex justify-evenly align-center gap-2">
+          {#each Object.keys(nodeTypes) as nodeType}
+            <Badge on:dragstart={event => onDragStart(event, nodeType)} draggable>{capitalize(nodeType)}</Badge>
+          {/each}
+        </div>
+      </Panel>
+      <Controls position="bottom-right" />
+      <Background />
     </SvelteFlow>
     {#if $detailsOpen}
       <div id="focus" class="h-full max-h-full w-[40%] absolute top-0 overflow-y-auto right-0 bg-secondary" transition:slide={{axis: 'x', duration: 200}}>
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><X /></Button>
-          <Table.Root {...$tableAttrs}>
-            <Table.Header>
-              {#each $headerRows as headerRow}
-                <Subscribe rowAttrs={headerRow.attrs()}>
-                  <Table.Row>
-                    {#each headerRow.cells as cell (cell.id)}
-                      <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()}>
-                        <Table.Head {...attrs}>
-                          <Render of={cell.render()} />
-                        </Table.Head>
-                      </Subscribe>
-                    {/each}
-                  </Table.Row>
-                </Subscribe>
-              {/each}
-            </Table.Header>
-            <Table.Body {...$tableBodyAttrs}>
-              {#each $pageRows as row (row.id)}
-                <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
-                  <Table.Row {...rowAttrs}>
-                    {#each row.cells as cell (cell.id)}
-                      <Subscribe attrs={cell.attrs()} let:attrs>
-                        <Table.Cell {...attrs}>
-                          <Render of={cell.render()} />
-                        </Table.Cell>
-                      </Subscribe>
-                    {/each}
-                  </Table.Row>
-                </Subscribe>
-              {/each}
-            </Table.Body>
-          </Table.Root>
+        <Table />
       </div>
     {/if}
 </main>

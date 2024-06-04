@@ -1,14 +1,14 @@
 <script lang="ts">
-import * as ContextMenu from "$lib/components/ui/context-menu"
-import { capitalize } from "$lib/utils"
-import { useEdges, useNodes } from "@xyflow/svelte"
 import { v4 as uuidv4 } from "uuid"
+
+import * as ContextMenu from "$lib/components/ui/context-menu"
+import { nodes, edges } from "$lib/stores"
+import { capitalize } from "$lib/utils"
+
 export let id: string
 export let type: string
-const nodes = useNodes()
-const edges = useEdges()
 
-$: node = $nodes.find(n => n.id === id)
+const node = $nodes.find(n => n.id === id)
 
 function duplicateNode() {
   $nodes.push({

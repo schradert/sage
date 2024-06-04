@@ -12,13 +12,13 @@ let isEditing = false
 let inputElement: HTMLInputElement
 $: if (isEditing) inputElement?.focus()
 
-const handleEdit = () => {
+function handleEdit() {
   isEditing = true
 }
-const handleCancel = () => {
+function handleCancel() {
   isEditing = false
 }
-const handleSubmit = () => {
+function handleSubmit() {
   isEditing = false
   if (row.isData()) {
     onUpdateValue(row.dataId, column.id, value)

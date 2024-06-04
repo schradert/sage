@@ -1,10 +1,20 @@
 <script lang="ts">
+import { Handle, type NodeProps, Position } from "@xyflow/svelte"
+
 import { detailsOpen } from "$lib/stores"
 import type { Orientation } from "$lib/types"
-import { Handle, type NodeProps, Position } from "@xyflow/svelte"
+
 import ContextMenu from "./ContextMenu.svelte"
 
-type $$Props = NodeProps
+type $$Props = NodeProps & {
+  data: {
+    graph: {
+      name: string
+      orientation: Orientation
+    }
+  }
+}
+
 export let id: $$Props["id"]
 export let type: $$Props["type"]
 export let data: $$Props["data"]
