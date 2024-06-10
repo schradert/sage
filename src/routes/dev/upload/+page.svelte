@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Scatter } from "$lib/components/data_vis/scatter"
+import { Scatter } from "$lib/components/data/scatter"
 import Dropzone from "svelte-file-dropzone"
 
 let file: File | undefined

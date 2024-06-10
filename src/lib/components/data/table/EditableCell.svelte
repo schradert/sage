@@ -12,13 +12,13 @@ let isEditing = false
 let inputElement: HTMLInputElement
 $: if (isEditing) inputElement?.focus()
 
-const handleEdit = () => {
+function handleEdit() {
   isEditing = true
 }
-const handleCancel = () => {
+function handleCancel() {
   isEditing = false
 }
-const handleSubmit = () => {
+function handleSubmit() {
   isEditing = false
   if (row.isData()) {
     onUpdateValue(row.dataId, column.id, value)
@@ -28,10 +28,10 @@ const handleSubmit = () => {
 
 <div>
   {#if !isEditing}
-    <span on:click={handleEdit}>{value}</span>
+    <span on:click={handleEdit}>{value === "" ? "NULL" : value}</span>
   {:else}
     <form class="flex gap-2" on:submit|preventDefault={handleSubmit}>
-      <input bind:this={inputElement} type="text" bind:value/>
+      <input bind:this={inputElement} type="text" bind:value />
       <button class="mini-button" type="submit">✅</button>
       <button class="mini-button" on:click={handleCancel}>❌</button>
     </form>

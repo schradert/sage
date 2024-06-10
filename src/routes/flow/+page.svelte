@@ -1,5 +1,12 @@
 <script lang="ts">
-import App from "./App.svelte"
+import { SvelteFlowProvider } from "@xyflow/svelte"
+
+// import type { PageData } from "./$types"
+import Flow from "./Flow.svelte"
+
+// export let data: PageData
 </script>
 
-<App />
+<SvelteFlowProvider>
+  <Flow />
+</SvelteFlowProvider>

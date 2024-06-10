@@ -3,11 +3,14 @@ import { cn } from "$lib/utils"
 import type { HTMLInputAttributes } from "svelte/elements"
 import type { InputEvents } from "./"
 
-type $$Props = HTMLInputAttributes
+type $$Props = HTMLInputAttributes & {
+  ref?: HTMLInputElement
+}
 type $$Events = InputEvents
 
 let className: $$Props["class"] = undefined
 export let value: $$Props["value"] = undefined
+export let ref: $$Props["ref"] = undefined
 export { className as class }
 
 // Workaround for https://github.com/sveltejs/svelte/issues/9305
@@ -21,6 +24,7 @@ export let readonly: $$Props["readonly"] = undefined
 		className
 	)}
 	bind:value
+	bind:this={ref}
 	{readonly}
 	on:blur
 	on:change

@@ -2,9 +2,6 @@
 type Item = $$Generic
 
 export let value: unknown
-
 </script>
 
-<div>
-  {value}
-</div>
+<div>{value}</div>

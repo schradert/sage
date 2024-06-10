@@ -1,10 +1,12 @@
 <script lang="ts">
-import "../app.css"
+import { Moon, PanelRightClose, PanelRightOpen, Sun } from "lucide-svelte"
+import { ModeWatcher, toggleMode } from "mode-watcher"
+
 import { Button } from "$lib/components/ui/button"
 import { Toggle } from "$lib/components/ui/toggle"
 import { menuOpen } from "$lib/stores"
-import { Moon, PanelRightClose, PanelRightOpen, Sun } from "lucide-svelte"
-import { ModeWatcher, toggleMode } from "mode-watcher"
+
+import "../app.css"
 </script>
 
 <div class="h-screen w-screen flex flex-col">
