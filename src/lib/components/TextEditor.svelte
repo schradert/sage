@@ -1,8 +1,9 @@
 <script lang="ts">
-import Button from "$lib/components/ui/button/button.svelte"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { Editor, type JSONContent } from "@tiptap/core"
 import { type EventDispatcher, createEventDispatcher, onDestroy, onMount } from "svelte"
+
+import { Button } from "$lib/components/ui/button"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 
 import Blockquote from "@tiptap/extension-blockquote"
 import Bold from "@tiptap/extension-bold"
@@ -30,7 +31,7 @@ import Underline from "@tiptap/extension-underline"
 
 let element: HTMLDivElement
 let editor: Editor
-export let initialContent: JSONContent | null
+export let initialContent: JSONContent | null = null
 
 interface Event {
   update: JSONContent

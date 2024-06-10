@@ -1,21 +1,35 @@
 <script lang="ts">
 import { useSvelteFlow } from "@xyflow/svelte"
 import type { Selected } from "bits-ui"
-import { Check, Search, Waypoints } from "lucide-svelte"
+import { Check, CopyPlus, Edit, Search, Waypoints } from "lucide-svelte"
 import * as R from "remeda"
+import type { FocusEventHandler } from "svelte/elements"
 
+import { Button } from "$lib/components/ui/button"
 import * as Combobox from "$lib/components/ui/combobox"
-import { nodes, edges, graphs, selectedGraphs } from "$lib/stores"
-import type { Graph } from "$lib/types"
+import { edges, graphs, nodes, selectedGraphs } from "$lib/stores"
+import type { Graph, Graphs } from "$lib/types"
+
+import CreateGraphSimple from "./CreateGraphSimple.svelte"
+// import type { PageData } from "./$types"
+import EditGraphSimple from "./EditGraphSimple.svelte"
 
 const { fitView } = useSvelteFlow()
 
+// export let data: PageData
+
+let hoveredGraph: string
+function handleGraphFocus(graph: Graph) {
+  return (_: FocusEventHandler<HTMLDivElement>) => {
+    hoveredGraph = graph.name
+  }
+}
+
 let inputValue = ""
 let touchedInput = false
-$: filteredGraphs =
-  inputValue && touchedInput
-    ? R.pickBy($selectedGraphs, graph => graph.name.toLowerCase().includes(inputValue))
-    : $graphs
+$: filteredGraphs = (
+  inputValue && touchedInput ? R.pickBy($graphs, graph => graph.name.toLowerCase().includes(inputValue)) : $graphs
+) satisfies Graphs
 
 function onSelectedChange(results: Selected<Graph>[] | undefined) {
   $selectedGraphs = R.mapToObj(results ?? [], ({ value: graph }) => [graph.name, graph])
@@ -27,7 +41,7 @@ function onSelectedChange(results: Selected<Graph>[] | undefined) {
 </script>
 
 <Combobox.Root
-  items={R.values($graphs)}
+  items={R.map(R.values($graphs), R.objOf("value"))}
   required
   multiple
   bind:inputValue
@@ -54,13 +68,31 @@ function onSelectedChange(results: Selected<Graph>[] | undefined) {
         class="flex h-10 w-full select-none items-center rounded-xl rounded-button py-3 pl-5 pr-1.5 text-sm capitalize outline-none transition-all duration-75 data-[highlighted]:bg-muted"
         value={graph}
         label={graph.name}
+        on:focusin={handleGraphFocus(graph)}
       >
         {graph.name}
+        {#if graph.name === hoveredGraph}
+          <CreateGraphSimple template={graph}>
+            <Button size="icon">
+              <CopyPlus />
+              <span class="sr-only">Duplicate Process</span>
+            </Button>
+          </CreateGraphSimple>
+          <EditGraphSimple {graph}>
+            <Button size="icon">
+              <Edit />
+              <span class="sr-only">Edit Process</span>
+            </Button>
+          </EditGraphSimple>
+        {/if}
         <Combobox.ItemIndicator class="ml-auto" asChild={false}><Check /></Combobox.ItemIndicator>
       </Combobox.Item>
     {:else}
       <span class="block px-5 py-2 text-sm text-muted-foreground">
         No graphs found
+        <CreateGraphSimple name={inputValue}>
+          <Button class="ml-2">+ Create</Button>
+        </CreateGraphSimple>
       </span>
     {/each}
   </Combobox.Content>

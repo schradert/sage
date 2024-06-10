@@ -2,7 +2,8 @@
 import { v4 as uuidv4 } from "uuid"
 
 import * as ContextMenu from "$lib/components/ui/context-menu"
-import { nodes, edges } from "$lib/stores"
+
+import { detailsOpen, edges, nodes } from "$lib/stores"
 import { capitalize } from "$lib/utils"
 
 export let id: string
@@ -39,7 +40,7 @@ function convertNode(type: string) {
 <ContextMenu.Root>
   <ContextMenu.Trigger class="flex flex-col h-full w-full items-center justify-center"><slot /></ContextMenu.Trigger>
   <ContextMenu.Content class="w-64">
-    <ContextMenu.Item inset on:click={deleteNode}>View <ContextMenu.Shortcut>⌘I</ContextMenu.Shortcut></ContextMenu.Item>
+    <ContextMenu.Item inset on:click={() => { node.selected = true; $detailsOpen = true }}>View <ContextMenu.Shortcut>⌘I</ContextMenu.Shortcut></ContextMenu.Item>
     <ContextMenu.Item inset on:click={duplicateNode}>Duplicate <ContextMenu.Shortcut>⌘V</ContextMenu.Shortcut></ContextMenu.Item>
     <ContextMenu.Item inset on:click={deleteNode}>Delete <ContextMenu.Shortcut>⌘X</ContextMenu.Shortcut></ContextMenu.Item>
     <ContextMenu.Sub>

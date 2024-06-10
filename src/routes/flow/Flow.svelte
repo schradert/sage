@@ -15,7 +15,7 @@ import {
   useSvelteFlow,
 } from "@xyflow/svelte"
 import "@xyflow/svelte/dist/style.css"
-import { Move, RotateCw, ScatterChart, X } from "lucide-svelte"
+import { Move, Plus, RotateCw, ScatterChart, X } from "lucide-svelte"
 import { mode } from "mode-watcher"
 import * as R from "remeda"
 import { slide } from "svelte/transition"
@@ -24,15 +24,22 @@ import { v4 as uuidv4 } from "uuid"
 import Table from "$lib/components/data/table"
 import { Badge } from "$lib/components/ui/badge"
 import { Button } from "$lib/components/ui/button"
+import * as Dialog from "$lib/components/ui/dialog"
+import { Input } from "$lib/components/ui/input"
+import { Label } from "$lib/components/ui/label"
 import { positionNodes } from "$lib/layout"
-import { detailsOpen, edges, nodes, selectedGraphs } from "$lib/stores"
+import { detailsOpen, edges, nodes, selectedGraphs, selectedNodes } from "$lib/stores"
 import { capitalize } from "$lib/utils"
 
-import GraphSelector from "./GraphSelector.svelte"
+import CreateGraphSimple from "./CreateGraphSimple.svelte"
 import MaterialNode from "./MaterialNode.svelte"
+// import type { PageData } from "./$types"
+import MultipleGraphSelector from "./MultipleGraphSelector.svelte"
 import StepNode from "./StepNode.svelte"
 
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
+
+// export let data: PageData
 
 function refreshGraphs(assign = true) {
   if (assign) {
@@ -125,6 +132,14 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
   event.dataTransfer.setData("application/svelteflow", nodeType)
   event.dataTransfer.effectAllowed = "move"
 }
+function openGraphCreateModal() {}
+
+let columnName: string
+let addColumnOpen = false
+function addColumn() {
+  $selectedNodes = R.mapValues($selectedNodes, R.mergeDeep({ data: { [columnName]: "" } }))
+  addColumnOpen = false
+}
 </script>
 
 <main class="h-full relative">
@@ -144,6 +159,12 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
       fitView
     >
       <Panel position="top-left">
+        <CreateGraphSimple>
+          <Button size="icon">
+            <Plus />
+            <span class="sr-only">Create new process</span>
+          </Button>
+        </CreateGraphSimple>
         <Button
           size="icon"
           on:click={() => {
@@ -154,7 +175,7 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
             })
           }}
         >
-          <RotateCw class="h-[1.2rem] w-[1.2rem]" />
+          <RotateCw />
           <span class="sr-only">Toggle layout orientation</span>
         </Button>
         <Button size="icon" on:click={positionNodes}>
@@ -164,7 +185,7 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
       </Panel>
       <Panel position="top-center">
-        <GraphSelector />
+        <MultipleGraphSelector />
       </Panel>
       <MiniMap position="bottom-left" />
       <Panel position="bottom-center">
@@ -180,6 +201,23 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
     {#if $detailsOpen}
       <div id="focus" class="h-full max-h-full w-[40%] absolute top-0 overflow-y-auto right-0 bg-secondary" transition:slide={{axis: 'x', duration: 200}}>
         <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><X /></Button>
+        <Dialog.Root bind:open={addColumnOpen}>
+          <Dialog.Trigger>
+            <Button size="icon"><Plus /></Button>
+          </Dialog.Trigger>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Add Data</Dialog.Title>
+              <Dialog.Description>Create new data columns on this node</Dialog.Description>
+            </Dialog.Header>
+            <form on:submit={addColumn}>
+              <Label for="name">Name</Label>
+              <Input id="name" placeholder="Name of column" bind:value={columnName} />
+              <p class="text-sm text-muted-foreground">Enter column name</p>
+              <Button type="submit">Create</Button>
+            </form>
+          </Dialog.Content>
+        </Dialog.Root>
         <Table />
       </div>
     {/if}

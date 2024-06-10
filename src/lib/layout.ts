@@ -15,8 +15,8 @@ export async function positionNodes(nodes: Node[], edges: Edge[]): Promise<{ nod
     id: "root",
     layoutOptions: {
       "elk.algorithm": "layered",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "40",
-      "elk.spacing.nodeNode": "40",
+      // "elk.layered.spacing.nodeNodeBetweenLayers": "40",
+      // "elk.spacing.nodeNode": "40",
       "elk.direction": isHorizontal ? "RIGHT" : "DOWN",
     },
     edges,

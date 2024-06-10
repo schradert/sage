@@ -13,11 +13,11 @@ export let column: DataColumn<Item>
 export let content: JSONContent | null
 export let onUpdateContent: (rowDataId: string, columnId: string, newValue: unknown) => void
 
-function save(content: JSONContent) {
+function save(newContent: JSONContent) {
   if (row.isData()) {
-    onUpdateContent(row.dataId, column.id, content)
+    onUpdateContent(row.dataId, column.id, newContent)
   }
-  content = content
+  content = newContent
 }
 </script>
 
