@@ -49,7 +49,7 @@
     "elkjs": "^0.9.3",
     "flat": "^6.0.1",
     "formsnap": "^1.0.0",
-    "lucide-svelte": "^0.381.0",
+    "lucide-svelte": "^0.394.0",
     "mode-watcher": "^0.3.0",
     "remeda": "^2.0.0",
     "svelte-file-dropzone": "^2.0.7",
