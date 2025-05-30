@@ -15,7 +15,7 @@ import {
   useSvelteFlow,
 } from "@xyflow/svelte"
 import "@xyflow/svelte/dist/style.css"
-import { Move, Plus, RotateCw, ScatterChart, X } from "lucide-svelte"
+import { ArrowLeft, Move, Plus, RotateCw, ScatterChart, X } from "lucide-svelte" // Added ArrowLeft
 import { mode } from "mode-watcher"
 import * as R from "remeda"
 import { slide } from "svelte/transition"
@@ -28,14 +28,25 @@ import * as Dialog from "$lib/components/ui/dialog"
 import { Input } from "$lib/components/ui/input"
 import { Label } from "$lib/components/ui/label"
 import { positionNodes } from "$lib/layout"
-import { detailsOpen, edges, nodes, selectedGraphs, selectedNodes } from "$lib/stores"
+import {
+  detailsOpen,
+  edges,
+  nodes,
+  selectedGraphs,
+  selectedNodes,
+  navigateBack, // Added
+  navigationHistory, // Added
+  currentGraphId, // Added
+} from "$lib/stores"
+import type { CustomNodeData, SubflowNodeData } from "$lib/types" // Import data types
 import { capitalize } from "$lib/utils"
 
 import CreateGraphSimple from "./CreateGraphSimple.svelte"
 import MaterialNode from "./MaterialNode.svelte"
 // import type { PageData } from "./$types"
-import MultipleGraphSelector from "./MultipleGraphSelector.svelte"
+// import MultipleGraphSelector from "./MultipleGraphSelector.svelte" // Temporarily remove/comment out
 import StepNode from "./StepNode.svelte"
+import SubflowNode from "./SubflowNode.svelte" // Import SubflowNode
 
 const { fitView, screenToFlowPosition, getIntersectingNodes } = useSvelteFlow()
 
@@ -95,14 +106,49 @@ function onDrop(event: DragEvent) {
   // TODO need a different way to select graph by default than first
   const graph = R.pipe($selectedGraphs, R.values, R.first)
   const { name, orientation } = graph
+  const nodeType = event.dataTransfer.getData("application/svelteflow")
+
+  let data: CustomNodeData | SubflowNodeData
+  let specificType: string = nodeType // To satisfy BaseNode<Data, Type>
+
+  const baseData = {
+    label: capitalize(nodeType),
+    graph: { name, orientation },
+    description: { content: null },
+  }
+
+  if (nodeType === "subflow") {
+    data = {
+      ...baseData,
+      label: "Subflow",
+      referencedGraphId: "", // Default for subflow
+    } satisfies SubflowNodeData
+    specificType = "subflow"
+  } else if (nodeType === "material") {
+    data = {
+      ...baseData,
+      label: "Material",
+    } satisfies CustomNodeData
+    specificType = "material"
+  } else if (nodeType === "step") {
+    data = {
+      ...baseData,
+      label: "Step",
+    } satisfies CustomNodeData
+    specificType = "step"
+  } else {
+    // Fallback for any other types, though we only have these three draggable ones
+    data = {
+      ...baseData,
+      label: "Node", // Generic label
+    } satisfies CustomNodeData
+  }
+
   const newNode: Node = {
     id: uuidv4(),
-    type: event.dataTransfer.getData("application/svelteflow"),
+    type: specificType, // Use the determined specific type
     position: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
-    data: {
-      label: "Another node",
-      graph: { name, orientation },
-    },
+    data, // Assign the correctly typed data object
     origin: [0.5, 0.0],
     sourcePosition: orientation === "horizontal" ? Position.Right : Position.Bottom,
     targetPosition: orientation === "horizontal" ? Position.Left : Position.Top,
@@ -120,6 +166,7 @@ const isValidConnection: IsValidConnection = connection => {
 const nodeTypes: NodeTypes = {
   material: MaterialNode,
   step: StepNode,
+  subflow: SubflowNode, // Add SubflowNode to nodeTypes
 }
 
 const connectionLineType = ConnectionLineType.SmoothStep
@@ -159,14 +206,24 @@ function addColumn() {
       fitView
     >
       <Panel position="top-left">
+        <Button
+          title="Navigate Back"
+          size="icon"
+          on:click={navigateBack}
+          disabled={$navigationHistory.length <= 1}
+        >
+          <ArrowLeft />
+          <span class="sr-only">Navigate Back</span>
+        </Button>
         <CreateGraphSimple>
-          <Button size="icon">
+          <Button size="icon" title="Create new process">
             <Plus />
             <span class="sr-only">Create new process</span>
           </Button>
         </CreateGraphSimple>
         <Button
           size="icon"
+          title="Toggle layout orientation"
           on:click={() => {
             $selectedGraphs = R.mapValues($selectedGraphs, graph => R.set(graph, "orientation", graph.orientation === "horizontal" ? "vertical" : "horizontal"))
             positionNodes($nodes, $edges).then(({ nodes: newNodes, edges: newEdges }) => {
@@ -178,14 +235,17 @@ function addColumn() {
           <RotateCw />
           <span class="sr-only">Toggle layout orientation</span>
         </Button>
-        <Button size="icon" on:click={positionNodes}>
+        <Button size="icon" title="Automatically place nodes" on:click={positionNodes}>
           <Move class="rotate-45" />
           <span class="sr-only">Automatically place nodes</span>
         </Button>
-        <Button size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
+        <Button title="Toggle Details Panel" size="icon" on:click={() => $detailsOpen = !$detailsOpen}><ScatterChart /></Button>
       </Panel>
       <Panel position="top-center">
-        <MultipleGraphSelector />
+        <!-- <MultipleGraphSelector /> Temporarily removed -->
+        {#if $currentGraphId}
+          <Badge variant="outline" class="p-2">Current Graph: {$currentGraphId}</Badge>
+        {/if}
       </Panel>
       <MiniMap position="bottom-left" />
       <Panel position="bottom-center">
@@ -250,7 +310,11 @@ function addColumn() {
 :global(.svelte-flow__node-step) {
   background-color: #FF7FA9;
 }
+:global(.svelte-flow__node-subflow) { /* Added style for subflow node */
+  background-color: #FFE0B2; /* Light orange/peach */
+}
 :global(.svelte-flow__node.selected) {
   background-color: #D37FFF;
+  /* Ensure selected subflow nodes also use this, or define a more specific one if needed */
  }
 </style>

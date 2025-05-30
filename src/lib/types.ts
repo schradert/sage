@@ -39,19 +39,31 @@ class Unique {
   }
 }
 
-export type NodeProps = BaseNodeProps & {
-  data: {
-    label: string
-    description: {
-      content: string | null
-    }
-    graph: {
-      name: GraphName
-      orientation: Orientation
-    }
+// Define a base for custom node data
+export type CustomNodeData = {
+  label: string
+  description: {
+    content: string | null
   }
+  graph: {
+    name: GraphName
+    orientation: Orientation
+  }
+  // referencedGraphId is optional here for standard nodes
+  referencedGraphId?: string
 }
-export type EdgeProps = BaseEdgeProps & {
+
+// Define specific data for SubflowNode, making referencedGraphId mandatory
+export type SubflowNodeData = CustomNodeData & {
+  referencedGraphId: string // Property to store the ID of the flow it represents
+}
+
+// Props for a standard node
+export type NodeProps = BaseNodeProps<CustomNodeData>
+// Props for a subflow node
+export type SubflowNodeProps = BaseNodeProps<SubflowNodeData>
+
+export type EdgeProps = BaseEdgeProps & { // Assuming Edge data is simpler or defined elsewhere if needed
   data: {
     graph: {
       name: GraphName
@@ -59,7 +71,16 @@ export type EdgeProps = BaseEdgeProps & {
   }
 }
 
-export type Node = BaseNode & NodeProps
+// Unified Node type. This tells @xyflow/svelte that our nodes can be one of these two types.
+// BaseNode already includes an optional `data` field. By specifying CustomNodeData or SubflowNodeData,
+// we are making the data field more specific for our custom node types.
+export type Node = BaseNode<CustomNodeData, string> | BaseNode<SubflowNodeData, string>
+
+// Define the SubflowNode type more specifically if needed for type guards, etc.
+// This might be redundant if Node union type is used everywhere.
+export type SubflowNodeType = BaseNode<SubflowNodeData, string>
+
+
 export type Edge = BaseEdge & EdgeProps
 
 export type Orientation = "vertical" | "horizontal"
